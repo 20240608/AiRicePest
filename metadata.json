@@ -1,0 +1,5 @@
+{
+  "name": "AI Rice Pest & Disease Identifier",
+  "description": "An advanced web application for identifying rice pests and diseases using AI. Users can upload images to get instant analysis, access a comprehensive knowledge base, and track their identification history. Features a modern, chat-like interface for AI interaction, user and admin roles, and customizable themes.",
+  "requestFramePermissions": []
+}
