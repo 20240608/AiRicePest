@@ -1,0 +1,125 @@
+
+
+<!DOCTYPE html>
+
+<html><head><meta charset="UTF-8"><title>图片映射</title>
+
+<style>
+
+  table { border-collapse: collapse; width: 100%; }
+
+  td, th { border: 1px solid #ccc; padding: 8px; }
+
+  img { max-width: 180px; max-height: 180px; }
+
+  input { width: 50px; text-align: center; }
+
+  .btn { margin: 20px 0; padding: 12px 24px; background: #007cba; color: white; border: none; font-size: 16px; cursor: pointer; }
+
+  #output { background: #f0f0f0; padding: 15px; margin-top: 20px; display: none; white-space: pre; }
+
+</style></head>
+
+<body>
+
+<h1>请填写每张图片对应的 Excel 行号（4~21）</h1>
+
+<table>
+
+<tr><th>#</th><th>文件名</th><th>图片</th><th>Excel 行号</th></tr>
+
+<tr><td>1</td><td><code>image1.png</code></td><td><img src="images/image1.png"></td><td><input type="number" min="4" max="21" id="r1"></td></tr>
+<tr><td>2</td><td><code>image2.png</code></td><td><img src="images/image2.png"></td><td><input type="number" min="4" max="21" id="r2"></td></tr>
+<tr><td>3</td><td><code>image3.png</code></td><td><img src="images/image3.png"></td><td><input type="number" min="4" max="21" id="r3"></td></tr>
+<tr><td>4</td><td><code>image4.png</code></td><td><img src="images/image4.png"></td><td><input type="number" min="4" max="21" id="r4"></td></tr>
+<tr><td>5</td><td><code>image5.png</code></td><td><img src="images/image5.png"></td><td><input type="number" min="4" max="21" id="r5"></td></tr>
+<tr><td>6</td><td><code>image6.png</code></td><td><img src="images/image6.png"></td><td><input type="number" min="4" max="21" id="r6"></td></tr>
+<tr><td>7</td><td><code>image7.png</code></td><td><img src="images/image7.png"></td><td><input type="number" min="4" max="21" id="r7"></td></tr>
+<tr><td>8</td><td><code>image8.png</code></td><td><img src="images/image8.png"></td><td><input type="number" min="4" max="21" id="r8"></td></tr>
+<tr><td>9</td><td><code>image9.png</code></td><td><img src="images/image9.png"></td><td><input type="number" min="4" max="21" id="r9"></td></tr>
+<tr><td>10</td><td><code>image10.jpeg</code></td><td><img src="images/image10.jpeg"></td><td><input type="number" min="4" max="21" id="r10"></td></tr>
+<tr><td>11</td><td><code>image11.png</code></td><td><img src="images/image11.png"></td><td><input type="number" min="4" max="21" id="r11"></td></tr>
+<tr><td>12</td><td><code>image12.png</code></td><td><img src="images/image12.png"></td><td><input type="number" min="4" max="21" id="r12"></td></tr>
+<tr><td>13</td><td><code>image13.png</code></td><td><img src="images/image13.png"></td><td><input type="number" min="4" max="21" id="r13"></td></tr>
+<tr><td>14</td><td><code>image14.png</code></td><td><img src="images/image14.png"></td><td><input type="number" min="4" max="21" id="r14"></td></tr>
+<tr><td>15</td><td><code>image15.png</code></td><td><img src="images/image15.png"></td><td><input type="number" min="4" max="21" id="r15"></td></tr>
+<tr><td>16</td><td><code>image16.png</code></td><td><img src="images/image16.png"></td><td><input type="number" min="4" max="21" id="r16"></td></tr>
+<tr><td>17</td><td><code>image17.png</code></td><td><img src="images/image17.png"></td><td><input type="number" min="4" max="21" id="r17"></td></tr>
+<tr><td>18</td><td><code>image18.png</code></td><td><img src="images/image18.png"></td><td><input type="number" min="4" max="21" id="r18"></td></tr>
+<tr><td>19</td><td><code>image19.png</code></td><td><img src="images/image19.png"></td><td><input type="number" min="4" max="21" id="r19"></td></tr>
+<tr><td>20</td><td><code>image20.png</code></td><td><img src="images/image20.png"></td><td><input type="number" min="4" max="21" id="r20"></td></tr>
+<tr><td>21</td><td><code>image21.png</code></td><td><img src="images/image21.png"></td><td><input type="number" min="4" max="21" id="r21"></td></tr>
+<tr><td>22</td><td><code>image22.png</code></td><td><img src="images/image22.png"></td><td><input type="number" min="4" max="21" id="r22"></td></tr>
+<tr><td>23</td><td><code>image23.png</code></td><td><img src="images/image23.png"></td><td><input type="number" min="4" max="21" id="r23"></td></tr>
+<tr><td>24</td><td><code>image24.png</code></td><td><img src="images/image24.png"></td><td><input type="number" min="4" max="21" id="r24"></td></tr>
+<tr><td>25</td><td><code>image25.png</code></td><td><img src="images/image25.png"></td><td><input type="number" min="4" max="21" id="r25"></td></tr>
+<tr><td>26</td><td><code>image26.png</code></td><td><img src="images/image26.png"></td><td><input type="number" min="4" max="21" id="r26"></td></tr>
+<tr><td>27</td><td><code>image27.png</code></td><td><img src="images/image27.png"></td><td><input type="number" min="4" max="21" id="r27"></td></tr>
+<tr><td>28</td><td><code>image28.png</code></td><td><img src="images/image28.png"></td><td><input type="number" min="4" max="21" id="r28"></td></tr>
+<tr><td>29</td><td><code>image29.png</code></td><td><img src="images/image29.png"></td><td><input type="number" min="4" max="21" id="r29"></td></tr>
+<tr><td>30</td><td><code>image30.png</code></td><td><img src="images/image30.png"></td><td><input type="number" min="4" max="21" id="r30"></td></tr>
+<tr><td>31</td><td><code>image31.png</code></td><td><img src="images/image31.png"></td><td><input type="number" min="4" max="21" id="r31"></td></tr>
+<tr><td>32</td><td><code>image32.png</code></td><td><img src="images/image32.png"></td><td><input type="number" min="4" max="21" id="r32"></td></tr>
+<tr><td>33</td><td><code>image33.png</code></td><td><img src="images/image33.png"></td><td><input type="number" min="4" max="21" id="r33"></td></tr>
+<tr><td>34</td><td><code>image34.png</code></td><td><img src="images/image34.png"></td><td><input type="number" min="4" max="21" id="r34"></td></tr>
+<tr><td>35</td><td><code>image35.png</code></td><td><img src="images/image35.png"></td><td><input type="number" min="4" max="21" id="r35"></td></tr>
+<tr><td>36</td><td><code>image36.png</code></td><td><img src="images/image36.png"></td><td><input type="number" min="4" max="21" id="r36"></td></tr>
+<tr><td>37</td><td><code>image37.png</code></td><td><img src="images/image37.png"></td><td><input type="number" min="4" max="21" id="r37"></td></tr>
+<tr><td>38</td><td><code>image38.png</code></td><td><img src="images/image38.png"></td><td><input type="number" min="4" max="21" id="r38"></td></tr>
+<tr><td>39</td><td><code>image39.png</code></td><td><img src="images/image39.png"></td><td><input type="number" min="4" max="21" id="r39"></td></tr>
+<tr><td>40</td><td><code>image40.png</code></td><td><img src="images/image40.png"></td><td><input type="number" min="4" max="21" id="r40"></td></tr>
+<tr><td>41</td><td><code>image41.png</code></td><td><img src="images/image41.png"></td><td><input type="number" min="4" max="21" id="r41"></td></tr>
+<tr><td>42</td><td><code>image42.png</code></td><td><img src="images/image42.png"></td><td><input type="number" min="4" max="21" id="r42"></td></tr>
+<tr><td>43</td><td><code>image43.png</code></td><td><img src="images/image43.png"></td><td><input type="number" min="4" max="21" id="r43"></td></tr>
+<tr><td>44</td><td><code>image44.png</code></td><td><img src="images/image44.png"></td><td><input type="number" min="4" max="21" id="r44"></td></tr>
+<tr><td>45</td><td><code>image45.png</code></td><td><img src="images/image45.png"></td><td><input type="number" min="4" max="21" id="r45"></td></tr>
+<tr><td>46</td><td><code>image46.png</code></td><td><img src="images/image46.png"></td><td><input type="number" min="4" max="21" id="r46"></td></tr>
+<tr><td>47</td><td><code>image47.png</code></td><td><img src="images/image47.png"></td><td><input type="number" min="4" max="21" id="r47"></td></tr>
+<tr><td>48</td><td><code>image48.png</code></td><td><img src="images/image48.png"></td><td><input type="number" min="4" max="21" id="r48"></td></tr>
+<tr><td>49</td><td><code>image49.png</code></td><td><img src="images/image49.png"></td><td><input type="number" min="4" max="21" id="r49"></td></tr>
+<tr><td>50</td><td><code>image50.png</code></td><td><img src="images/image50.png"></td><td><input type="number" min="4" max="21" id="r50"></td></tr>
+<tr><td>51</td><td><code>image51.png</code></td><td><img src="images/image51.png"></td><td><input type="number" min="4" max="21" id="r51"></td></tr>
+<tr><td>52</td><td><code>image52.png</code></td><td><img src="images/image52.png"></td><td><input type="number" min="4" max="21" id="r52"></td></tr>
+<tr><td>53</td><td><code>image53.png</code></td><td><img src="images/image53.png"></td><td><input type="number" min="4" max="21" id="r53"></td></tr>
+
+
+</table>
+
+<button class="btn" onclick="generate()">生成映射表（点击后复制下方文本）</button>
+
+<pre id="output"></pre>
+
+<script>
+
+function generate() {
+
+  let lines = [];
+
+  for (let i = 1; i <= 54; i++) {
+
+    let inp = document.getElementById('r' + i);
+
+    if (inp && inp.value) {
+
+      let code = document.querySelectorAll('code')[i-1];
+
+      lines.push(code.textContent + " -> 行 " + inp.value);
+
+    }
+
+  }
+
+  let out = document.getElementById('output');
+
+  out.textContent = lines.join('\n');
+
+  out.style.display = 'block';
+
+  alert('生成成功！请全选下方文本，复制粘贴给 AI');
+
+}
+
+</script>
+
+</body></html>
+
