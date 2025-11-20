@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
-from models import db, KnowledgeBase, User, Feedback
+from models import db, KnowledgeBase, User, Feedback, History, RecognitionDetail
 from utils import admin_required
+from sqlalchemy import func, extract
+from datetime import datetime, timedelta
 import json
 
 admin_bp = Blueprint('admin', __name__)
@@ -125,15 +127,28 @@ def delete_knowledge(pest_id):
 @admin_bp.route('/users', methods=['GET'])
 @admin_required
 def get_users():
-    """获取所有用户列表"""
+    """获取所有用户列表 - 包含统计信息"""
     users = User.query.all()
     result = []
     for user in users:
+        # 统计用户的识别次数
+        recognition_count = History.query.filter_by(user_id=user.id).count()
+        
+        # 统计用户的反馈次数
+        feedback_count = Feedback.query.filter_by(user_id=user.id).count()
+        
+        # 判断是否活跃（最近30天有登录）
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        is_active = user.last_login and user.last_login >= thirty_days_ago
+        
         result.append({
             'id': str(user.id),
             'username': user.username,
-            'email': user.email,
+            'email': user.email or '',
             'role': user.role,
+            'recognitionCount': recognition_count,
+            'feedbackCount': feedback_count,
+            'isActive': is_active,
             'createdAt': user.created_at.isoformat() if user.created_at else None,
             'lastLogin': user.last_login.isoformat() if user.last_login else None
         })
@@ -143,35 +158,89 @@ def get_users():
 @admin_bp.route('/stats', methods=['GET'])
 @admin_required
 def get_stats():
-    """获取管理员统计数据"""
-    user_count = User.query.count()
-    feedback_count = Feedback.query.count()
-    recognition_count = 157  # 可以从 history 表统计
+    """获取管理员统计数据 - 真实数据"""
+    # 基础统计
+    total_users = User.query.count()
+    total_recognitions = History.query.count()
+    total_feedbacks = Feedback.query.count()
     
-    # 模拟每周识别数据
-    recognitions_per_day = [
-        {'date': 'Mon', 'count': 20},
-        {'date': 'Tue', 'count': 35},
-        {'date': 'Wed', 'count': 15},
-        {'date': 'Thu', 'count': 45},
-        {'date': 'Fri', 'count': 25},
-        {'date': 'Sat', 'count': 12},
-        {'date': 'Sun', 'count': 5},
-    ]
+    # 活跃用户统计（最近30天有登录或识别记录）
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    active_users = User.query.filter(
+        (User.last_login >= thirty_days_ago) | (User.recognition_count > 0)
+    ).count()
+    
+    # 每日识别数据（最近7天）
+    recognitions_per_day = []
+    for i in range(6, -1, -1):
+        date = (datetime.utcnow() - timedelta(days=i)).date()
+        count = History.query.filter(
+            func.date(History.created_at) == date
+        ).count()
+        day_name = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][date.weekday()]
+        recognitions_per_day.append({
+            'date': day_name,
+            'count': count
+        })
+    
+    # 反馈类型统计
+    feedback_types_data = db.session.query(
+        Feedback.feedback_type,
+        func.count(Feedback.id)
+    ).group_by(Feedback.feedback_type).all()
+    
+    feedback_types = []
+    type_name_map = {
+        'bug': '错误报告',
+        'feature': '功能建议',
+        'recognition_issue': '识别问题',
+        'general': '其他'
+    }
+    for ftype, count in feedback_types_data:
+        feedback_types.append({
+            'name': type_name_map.get(ftype, ftype),
+            'value': count
+        })
+    
+    # 如果没有反馈，返回默认数据
+    if not feedback_types:
+        feedback_types = [
+            {'name': '功能建议', 'value': 0},
+            {'name': '错误报告', 'value': 0},
+            {'name': '识别问题', 'value': 0},
+            {'name': '其他', 'value': 0}
+        ]
+    
+    # 月度识别趋势（最近6个月）
+    monthly_data = []
+    for i in range(5, -1, -1):
+        target_date = datetime.utcnow() - timedelta(days=i*30)
+        month_name = target_date.strftime('%m月')
+        count = History.query.filter(
+            extract('year', History.created_at) == target_date.year,
+            extract('month', History.created_at) == target_date.month
+        ).count()
+        monthly_data.append({
+            'month': month_name,
+            'recognitions': count
+        })
     
     return jsonify({
         'success': True,
-        'userCount': user_count,
-        'recognitionCount': recognition_count,
-        'feedbackCount': feedback_count,
-        'recognitionsPerDay': recognitions_per_day
+        'userCount': total_users,
+        'recognitionCount': total_recognitions,
+        'feedbackCount': total_feedbacks,
+        'activeUsers': active_users,
+        'recognitionsPerDay': recognitions_per_day,
+        'feedbackTypes': feedback_types,
+        'monthlyData': monthly_data
     })
 
 
 @admin_bp.route('/feedbacks', methods=['GET'])
 @admin_required
 def get_feedbacks():
-    """获取所有反馈"""
+    """获取所有反馈 - 包含类型信息"""
     feedbacks = Feedback.query.order_by(Feedback.created_at.desc()).all()
     result = []
     for fb in feedbacks:
@@ -182,12 +251,15 @@ def get_feedbacks():
         
         result.append({
             'id': str(fb.id),
-            'userId': fb.user_id,
+            'userId': str(fb.user_id) if fb.user_id else None,
             'username': fb.username,
             'text': fb.text,
+            'contact': fb.contact or '',
+            'feedbackType': fb.feedback_type,
             'imageUrls': image_urls,
             'status': fb.status,
-            'timestamp': fb.created_at.isoformat() if fb.created_at else None
+            'timestamp': fb.created_at.isoformat() if fb.created_at else None,
+            'updatedAt': fb.updated_at.isoformat() if fb.updated_at else None
         })
     
     return jsonify({'success': True, 'data': result})

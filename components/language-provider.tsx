@@ -65,6 +65,7 @@ const translations = {
     'history.totalPages': '页',
     'history.prevPage': '上一页',
     'history.nextPage': '下一页',
+    'history.viewAll': '查看全部历史',
     
     // 结果详情
     'result.title': '识别结果详情',
@@ -132,6 +133,28 @@ const translations = {
     'knowledge.medium': '中危',
     'knowledge.low': '低危',
     'knowledge.noResults': '未找到相关病虫害信息',
+    'knowledge.notFound': '未找到相关病虫害信息',
+    'knowledge.aliases': '别名',
+    'knowledge.keyFeatures': '主要特征',
+    'knowledge.affectedParts': '受害部位',
+    'knowledge.images': '症状图片',
+    'knowledge.pathogenInfo': '病原信息',
+    'knowledge.occurrenceInfo': '发生规律',
+    'knowledge.controlMeasures': '防治措施',
+    'knowledge.pathogen': '病原体',
+    'knowledge.transmission': '传播途径',
+    'knowledge.conditions': '发生条件',
+    'knowledge.lifeCycle': '发生规律',
+    'knowledge.agriculturalControl': '农业防治',
+    'knowledge.physicalControl': '物理防治',
+    'knowledge.biologicalControl': '生物防治',
+    'knowledge.chemicalControl': '化学防治',
+    'knowledge.refresh': '换一批',
+    'knowledge.viewAll': '查看全部',
+    
+    // 侧边栏
+    'sidebar.navigation': '功能导航',
+    'sidebar.openKnowledge': '打开知识库',
     
     // 登录
     'login.title': '欢迎回来',
@@ -230,6 +253,7 @@ const translations = {
     'history.totalPages': 'of',
     'history.prevPage': 'Previous',
     'history.nextPage': 'Next',
+    'history.viewAll': 'View All History',
     
     // Result
     'result.title': 'Recognition Result Details',
@@ -297,6 +321,28 @@ const translations = {
     'knowledge.medium': 'Medium Risk',
     'knowledge.low': 'Low Risk',
     'knowledge.noResults': 'No disease information found',
+    'knowledge.notFound': 'No disease information found',
+    'knowledge.aliases': 'Aliases',
+    'knowledge.keyFeatures': 'Key Features',
+    'knowledge.affectedParts': 'Affected Parts',
+    'knowledge.images': 'Symptom Images',
+    'knowledge.pathogenInfo': 'Pathogen Information',
+    'knowledge.occurrenceInfo': 'Occurrence Pattern',
+    'knowledge.controlMeasures': 'Control Measures',
+    'knowledge.pathogen': 'Pathogen',
+    'knowledge.transmission': 'Transmission',
+    'knowledge.conditions': 'Occurrence Conditions',
+    'knowledge.lifeCycle': 'Life Cycle',
+    'knowledge.agriculturalControl': 'Agricultural Control',
+    'knowledge.physicalControl': 'Physical Control',
+    'knowledge.biologicalControl': 'Biological Control',
+    'knowledge.chemicalControl': 'Chemical Control',
+    'knowledge.refresh': 'Refresh',
+    'knowledge.viewAll': 'View All',
+    
+    // Sidebar
+    'sidebar.navigation': 'Navigation',
+    'sidebar.openKnowledge': 'Open Knowledge Base',
     
     // Login
     'login.title': 'Welcome Back',

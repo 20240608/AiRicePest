@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
-from models import db, Feedback
-from utils import token_required
+from models import db, Feedback, User
+from utils import token_required, get_current_user
 import json
 import os
 import uuid
@@ -13,12 +13,16 @@ feedback_bp = Blueprint('feedback', __name__)
 @token_required
 def submit_feedback():
     """提交反馈 — 支持 JSON body 或 multipart/form-data 上传图片"""
-    user_id = str(request.current_user.get('user_id'))
-    username = request.current_user.get('username', 'anonymous')
+    # 获取当前用户
+    user = get_current_user()
+    user_id = user.id if user else None
+    username = user.username if user else 'anonymous'
 
     # 尝试从 multipart 表单读取字段
     if request.content_type and 'multipart/form-data' in request.content_type:
         text = request.form.get('text')
+        contact = request.form.get('contact', '')
+        feedback_type = request.form.get('feedbackType', 'general')
         images = request.files.getlist('images')  # 多个文件
 
         # 保存图片到 static/uploads
@@ -37,6 +41,8 @@ def submit_feedback():
         # JSON body
         data = request.get_json()
         text = data.get('text')
+        contact = data.get('contact', '')
+        feedback_type = data.get('feedbackType', 'general')
         image_urls = data.get('imageUrls', [])
 
     if not text:
@@ -47,6 +53,8 @@ def submit_feedback():
             user_id=user_id,
             username=username,
             text=text,
+            contact=contact,
+            feedback_type=feedback_type,
             image_urls=json.dumps(image_urls) if image_urls else '[]',
             status='new'
         )

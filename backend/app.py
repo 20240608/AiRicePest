@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from config import Config
 from models import db
@@ -8,8 +8,13 @@ from routes.admin import admin_bp
 from routes.feedback import feedback_bp
 from routes.profile import profile_bp
 from routes.recognition import recognition_bp
+import os
 
-app = Flask(__name__)
+# 获取项目根目录
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(BASE_DIR)
+
+app = Flask(__name__, static_folder=os.path.join(BASE_DIR, 'static'))
 app.config.from_object(Config)
 
 # 启用 CORS — 增加 Next.js 本地开发端口（3000/3001）以便前端可以访问后端
@@ -58,6 +63,21 @@ def health():
 def favicon():
     """Favicon 处理"""
     return '', 204
+
+
+# 静态文件服务 - 用于知识库图片
+@app.route('/images/<path:filename>')
+def serve_images(filename):
+    """提供知识库图片服务"""
+    images_dir = os.path.join(PARENT_DIR, 'images')
+    return send_from_directory(images_dir, filename)
+
+
+# 静态文件服务 - 用于上传的图片
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    """提供上传图片服务"""
+    return send_from_directory(app.static_folder, filename)
 
 
 if __name__ == '__main__':

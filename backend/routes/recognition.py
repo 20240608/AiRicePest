@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
-from models import db, History, RecognitionDetail
-from utils import token_required
+from models import db, History, RecognitionDetail, User
+from utils import token_required, get_current_user
 import uuid
 import json
 from datetime import datetime
@@ -14,8 +14,16 @@ def get_history():
     """返回识别历史列表 — 直接返回 array（不包装在 data 字段）"""
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', 50, type=int)
+    
+    # 获取当前用户
+    user = get_current_user()
 
-    query = History.query.order_by(History.date.desc())
+    # 如果是普通用户，只返回自己的记录
+    if user and user.role != 'admin':
+        query = History.query.filter_by(user_id=user.id).order_by(History.date.desc())
+    else:
+        query = History.query.order_by(History.date.desc())
+    
     total = query.count()
     items = query.offset((page - 1) * limit).limit(limit).all()
 
@@ -68,6 +76,10 @@ def get_recognition_detail(recog_id):
 @token_required
 def recognize_image():
     """接收上传图片并创建一个模拟的识别结果（演示用）"""
+    # 获取当前用户
+    user = get_current_user()
+    user_id = user.id if user else None
+    
     # 支持 multipart/form-data 上传文件，或 JSON body with imageUrl
     image_url = None
     if 'file' in request.files:
@@ -97,6 +109,7 @@ def recognize_image():
 
     rd = RecognitionDetail(
         id=recog_id,
+        user_id=user_id,
         disease_name=disease_name,
         confidence=confidence,
         description=description,
@@ -109,6 +122,7 @@ def recognize_image():
     # 同时写入 history
     hist = History(
         id=uuid.uuid4().hex[:32],
+        user_id=user_id,
         date=datetime.utcnow().date(),
         image_url=image_url or '',
         disease_name=disease_name,
@@ -118,6 +132,12 @@ def recognize_image():
     try:
         db.session.add(rd)
         db.session.add(hist)
+        
+        # 更新用户识别计数
+        if user:
+            user.recognition_count = (user.recognition_count or 0) + 1
+            user.last_login = datetime.utcnow()
+        
         db.session.commit()
     except Exception as e:
         db.session.rollback()

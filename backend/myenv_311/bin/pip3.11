@@ -1,4 +1,4 @@
-#!/media/qiu/entertainment/airicepest/AiRicePest/backend/myenv_311/bin/python3.11
+#!/media/qiu/entertainment/airicepest/AiRicePest/airicepest/backend/myenv_311/bin/python3.11
 # -*- coding: utf-8 -*-
 import re
 import sys

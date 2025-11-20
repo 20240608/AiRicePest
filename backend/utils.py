@@ -73,3 +73,15 @@ def admin_required(f):
     
     return decorated
 
+
+def get_current_user():
+    """获取当前用户对象（需要在 token_required 装饰器之后调用）"""
+    if not hasattr(request, 'current_user'):
+        return None
+    
+    from models import User
+    user_id = request.current_user.get('user_id')
+    if user_id:
+        return User.query.get(user_id)
+    return None
+

@@ -4,81 +4,78 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Users, Activity, MessageSquare, TrendingUp } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api-config';
 
 interface DashboardStats {
-  totalUsers: number;
-  totalRecognitions: number;
-  totalFeedback: number;
+  userCount: number;
+  recognitionCount: number;
+  feedbackCount: number;
   activeUsers: number;
+  recognitionsPerDay: Array<{ date: string; count: number }>;
+  feedbackTypes: Array<{ name: string; value: number }>;
+  monthlyData: Array<{ month: string; recognitions: number }>;
 }
+
+const COLORS = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981'];
 
 export function DashboardPanel() {
   const [stats, setStats] = useState<DashboardStats>({
-    totalUsers: 0,
-    totalRecognitions: 0,
-    totalFeedback: 0,
+    userCount: 0,
+    recognitionCount: 0,
+    feedbackCount: 0,
     activeUsers: 0,
+    recognitionsPerDay: [],
+    feedbackTypes: [],
+    monthlyData: [],
   });
 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 从后端获取统计数据
-    const fetchStats = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/admin/stats', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch stats:', error);
-        // 使用模拟数据
-        setStats({
-          totalUsers: 1250,
-          totalRecognitions: 5420,
-          totalFeedback: 328,
-          activeUsers: 892,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchStats();
   }, []);
 
-  // 柱状图数据 - 每月识别次数
-  const monthlyData = [
-    { month: '1月', recognitions: 420 },
-    { month: '2月', recognitions: 380 },
-    { month: '3月', recognitions: 520 },
-    { month: '4月', recognitions: 450 },
-    { month: '5月', recognitions: 680 },
-    { month: '6月', recognitions: 590 },
-  ];
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/admin/stats`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
 
-  // 饼图数据 - 反馈类型分布
-  const feedbackTypes = [
-    { name: '功能建议', value: 45, color: '#3b82f6' },
-    { name: '错误报告', value: 30, color: '#ef4444' },
-    { name: '识别问题', value: 15, color: '#f59e0b' },
-    { name: '其他', value: 10, color: '#10b981' },
-  ];
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setStats({
+            userCount: data.userCount || 0,
+            recognitionCount: data.recognitionCount || 0,
+            feedbackCount: data.feedbackCount || 0,
+            activeUsers: data.activeUsers || 0,
+            recognitionsPerDay: data.recognitionsPerDay || [],
+            feedbackTypes: data.feedbackTypes || [],
+            monthlyData: data.monthlyData || [],
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-muted-foreground">加载中...</div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
+
+  const activityRate = stats.userCount > 0 
+    ? ((stats.activeUsers / stats.userCount) * 100).toFixed(1)
+    : '0.0';
 
   return (
     <div className="space-y-6">
@@ -90,7 +87,7 @@ export function DashboardPanel() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            <div className="text-2xl font-bold">{stats.userCount}</div>
             <p className="text-xs text-muted-foreground">
               活跃用户: {stats.activeUsers}
             </p>
@@ -103,7 +100,7 @@ export function DashboardPanel() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalRecognitions}</div>
+            <div className="text-2xl font-bold">{stats.recognitionCount}</div>
             <p className="text-xs text-muted-foreground">
               累计识别请求
             </p>
@@ -116,7 +113,7 @@ export function DashboardPanel() {
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalFeedback}</div>
+            <div className="text-2xl font-bold">{stats.feedbackCount}</div>
             <p className="text-xs text-muted-foreground">
               用户反馈总数
             </p>
@@ -129,9 +126,7 @@ export function DashboardPanel() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {((stats.activeUsers / stats.totalUsers) * 100).toFixed(1)}%
-            </div>
+            <div className="text-2xl font-bold">{activityRate}%</div>
             <p className="text-xs text-muted-foreground">
               当前活跃用户占比
             </p>
@@ -143,20 +138,26 @@ export function DashboardPanel() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>月度识别趋势</CardTitle>
-            <CardDescription>最近6个月的识别次数统计</CardDescription>
+            <CardTitle>每日识别趋势</CardTitle>
+            <CardDescription>最近7天的识别次数统计</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="recognitions" fill="#3b82f6" name="识别次数" />
-              </BarChart>
-            </ResponsiveContainer>
+            {stats.recognitionsPerDay.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={stats.recognitionsPerDay}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="count" fill="#3b82f6" name="识别次数" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                暂无数据
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -166,27 +167,55 @@ export function DashboardPanel() {
             <CardDescription>用户反馈的分类统计</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={feedbackTypes}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {feedbackTypes.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            {stats.feedbackTypes.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={stats.feedbackTypes}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {stats.feedbackTypes.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                暂无数据
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* 月度趋势 */}
+        {stats.monthlyData && stats.monthlyData.length > 0 && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>月度识别趋势</CardTitle>
+              <CardDescription>最近6个月的识别次数统计</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={stats.monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="recognitions" fill="#10b981" name="识别次数" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

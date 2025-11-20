@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Upload, CheckCircle2, ImagePlus, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -18,6 +19,8 @@ export default function FeedbackPage() {
   const router = useRouter();
   const { t } = useLanguage();
   const [content, setContent] = useState("");
+  const [contact, setContact] = useState("");
+  const [feedbackType, setFeedbackType] = useState("general");
   const [images, setImages] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,9 +53,12 @@ export default function FeedbackPage() {
 
     setIsSubmitting(true);
     
-    try {
+    try:
       const formData = new FormData();
       formData.append('text', content);
+      formData.append('contact', contact);
+      formData.append('feedbackType', feedbackType);
+      
       const userId = localStorage.getItem('userId');
       if (userId) {
         formData.append('userId', userId);
@@ -147,6 +153,27 @@ export default function FeedbackPage() {
               </p>
             </div>
 
+            {/* 反馈类型 */}
+            <div>
+              <Label htmlFor="feedbackType" className="text-base font-semibold">
+                {t('feedback.type') || '反馈类型'}
+              </Label>
+              <p className="text-sm text-muted-foreground mb-2">
+                {t('feedback.typeHint') || '请选择最符合的反馈类型'}
+              </p>
+              <Select value={feedbackType} onValueChange={setFeedbackType}>
+                <SelectTrigger className="max-w-md">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">{t('feedback.typeGeneral') || '一般反馈'}</SelectItem>
+                  <SelectItem value="bug">{t('feedback.typeBug') || '错误报告'}</SelectItem>
+                  <SelectItem value="feature">{t('feedback.typeFeature') || '功能建议'}</SelectItem>
+                  <SelectItem value="recognition_issue">{t('feedback.typeRecognition') || '识别问题'}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* 图片上传 */}
             <div>
               <Label className="text-base font-semibold">{t('feedback.images')}</Label>
@@ -199,6 +226,8 @@ export default function FeedbackPage() {
               </p>
               <Input
                 id="contact"
+                value={contact}
+                onChange={(e) => setContact(e.target.value)}
                 placeholder={t('feedback.contactPlaceholder')}
                 className="max-w-md"
               />

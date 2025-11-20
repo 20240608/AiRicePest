@@ -37,21 +37,46 @@
 
 ### User Features
 - 🔐 **Authentication**: Secure login/register with JWT tokens
-- 📸 **Image Recognition**: Upload images for instant disease identification
+- 📸 **Image Recognition**: Upload images for instant disease identification with confidence scores
 - 📚 **Knowledge Base**: Explore rice disease encyclopedia with:
   - Disease symptoms & characteristics
   - Prevention methods (Agricultural, Physical, Biological, Chemical)
   - High-quality symptom images
-- 📜 **History Tracking**: View past recognition results
-- 💬 **Feedback System**: Submit suggestions with image attachments
+  - Alias names and affected plant parts
+- 📜 **History Tracking**: 
+  - View past recognition results in card-grid layout
+  - Quick access to recent 5 records in sidebar
+  - Search and filter by disease name or date
+  - Detailed view with full diagnosis and treatment recommendations
+- 💬 **Feedback System**: 
+  - Submit suggestions with image attachments
+  - Choose feedback type (Bug Report, Feature Request, Recognition Issue, General)
+  - Provide contact information for follow-up
+- 👤 **User Profile**: 
+  - Track recognition count and activity status
+  - View account information and registration date
+  - Monitor last login timestamp
 - 🌐 **i18n Support**: Switch between English/Chinese
 - 🎨 **Theming**: 4 color themes with dark mode
 
 ### Admin Features
-- 👥 **User Management**: View, edit, and manage user accounts
-- 📊 **Analytics Dashboard**: View system statistics and usage trends
-- 📝 **Feedback Management**: Review and respond to user feedback
-- 🗂️ **Knowledge Base CMS**: Add/edit disease entries
+- 👥 **User Management**: 
+  - View all users with registration dates and activity status
+  - Track user recognition counts and last login
+  - Edit user roles and delete accounts
+  - Monitor active vs inactive users
+- 📊 **Analytics Dashboard**: 
+  - Real-time system statistics (total users, recognitions, feedback)
+  - 30-day activity rate calculation
+  - Daily/monthly recognition trends visualization
+  - Feedback type distribution charts
+  - Growth metrics and user engagement tracking
+- 📝 **Feedback Management**: 
+  - Review all user feedback with type filtering
+  - Update feedback status (new/in_review/resolved)
+  - View contact information for follow-up
+  - Track feedback submission timestamps
+- 🗂️ **Knowledge Base CMS**: Add/edit disease entries with multi-image support
 
 ---
 
@@ -77,8 +102,20 @@
 
 ### Database
 - **Type**: MariaDB / MySQL 5.7+
-- **Tables**: users, history, recognition_details, knowledge_base, feedbacks
-- **Pre-seeded Data**: 18 rice diseases/pests with full metadata
+- **Tables**: 
+  - `users` - User accounts with recognition tracking (recognition_count, is_active)
+  - `history` - Recognition history records linked to users
+  - `recognition_details` - Detailed recognition results with complete diagnosis info
+  - `knowledge_base` - Rice disease/pest encyclopedia (18 entries)
+  - `feedbacks` - User feedback with type classification (bug/feature/recognition_issue/general)
+- **Data Relationships**: 
+  - Foreign keys between users and their history/recognition/feedback records
+  - Automatic user activity tracking (last_login, recognition_count updates)
+- **Pre-seeded Data**: 
+  - 3 test user accounts (2 regular users, 1 admin)
+  - 5 sample recognition records with full diagnosis details
+  - 18 rice diseases/pests with comprehensive information
+  - 4 sample feedback entries demonstrating different feedback types
 
 ### Development Tools
 - **Node.js**: 20.x+
@@ -109,22 +146,34 @@ airicepest/
 ├── backend/                  # Python Flask API (Active Backend)
 │   ├── routes/               # API route blueprints
 │   │   ├── auth.py           # Login, register endpoints
-│   │   ├── knowledge.py      # GET /api/knowledge
-│   │   ├── recognition.py    # History, recognition detail, recognize
-│   │   ├── feedback.py       # POST /api/feedback (multipart upload)
-│   │   ├── profile.py        # GET/PUT /api/profile
-│   │   └── admin.py          # Admin CRUD endpoints
+│   │   ├── knowledge.py      # GET /api/knowledge (disease encyclopedia)
+│   │   ├── recognition.py    # Recognition history & detail, image upload & processing
+│   │   ├── feedback.py       # POST /api/feedback (with feedback_type & contact fields)
+│   │   ├── profile.py        # GET/PUT /api/profile (user info with activity tracking)
+│   │   └── admin.py          # Admin CRUD + real-time statistics queries
 │   ├── static/uploads/       # User-uploaded images
-│   ├── models.py             # SQLAlchemy ORM models
+│   ├── models.py             # SQLAlchemy ORM models with user tracking fields
 │   ├── config.py             # Flask configuration
-│   ├── utils.py              # Auth helpers (token, password hashing)
+│   ├── utils.py              # Auth helpers (token, password hashing, get_current_user)
 │   ├── app.py                # Flask app entry point (runs on port 4000)
+│   ├── migrate_database.py   # Database migration script for schema updates
 │   ├── requirements.txt      # Python dependencies
 │   └── .env                  # Backend environment variables
 │
 ├── components/               # React UI components
-│   ├── ui/                   # shadcn/ui components
+│   ├── ui/                   # shadcn/ui components (buttons, cards, forms, etc.)
+│   ├── shared/               # Shared reusable components
+│   │   ├── DiseaseCard.tsx   # Disease knowledge base card
+│   │   └── HistoryCard.tsx   # Recognition history card with confidence badges
 │   ├── layout/               # Layout components (sidebar, header, nav)
+│   ├── admin/                # Admin dashboard components
+│   │   ├── DashboardPanel.tsx  # Real-time statistics with charts
+│   │   ├── UserManagement.tsx  # User CRUD with activity tracking
+│   │   └── FeedbackManagement.tsx  # Feedback review with type filtering
+│   ├── home/                 # Home page components
+│   │   ├── app-sidebar.tsx   # Sidebar with recent history preview
+│   │   ├── ai-chat.tsx       # AI chat interface
+│   │   └── knowledge-base.tsx  # Knowledge carousel
 │   ├── theme-switcher.tsx    # Theme selector
 │   ├── language-switcher.tsx # Language toggle
 │   ├── theme-provider.tsx    # Theme context
@@ -139,8 +188,17 @@ airicepest/
 │
 ├── server/                   # (Optional) TypeScript Express server
 │   ├── sql/                  # Database schema & seed SQL files
-│   │   ├── schema.sql        # Database table definitions
-│   │   └── seed.sql          # Initial data (18 diseases/pests)
+│   │   ├── schema.sql        # Complete table definitions with foreign keys and indexes
+│   │   │                     # Tables: users (with recognition_count, is_active)
+│   │   │                     #         history (with user_id, created_at)
+│   │   │                     #         recognition_details (with user_id, created_at)
+│   │   │                     #         knowledge_base (18 diseases/pests)
+│   │   │                     #         feedbacks (with feedback_type, contact, updated_at)
+│   │   └── seed.sql          # Initial data with proper user relationships
+│   │                         # - 3 users (2 active users + 1 admin)
+│   │                         # - 5 recognition records correctly linked to users
+│   │                         # - 18 diseases/pests with detailed Chinese descriptions
+│   │                         # - 4 feedback samples with different types
 │   └── src/                  # Express routes (not actively used)
 │
 ├── .env.local                # Frontend env (NEXT_PUBLIC_API_URL)
@@ -330,22 +388,26 @@ gunicorn -w 4 -b 0.0.0.0:4000 app:app
 - `POST /api/auth/register` - User registration
 
 ### User Endpoints (Require JWT Token)
-- `GET /api/profile` - Get current user profile
-- `PUT /api/profile` - Update user info
-- `GET /api/knowledge` - Get knowledge base list
-- `GET /api/knowledge/:id` - Get disease detail
-- `POST /api/recognize` - Upload image for recognition
-- `GET /api/history` - Get recognition history
-- `GET /api/recognitions/:id` - Get specific result detail
-- `POST /api/feedback` - Submit feedback (supports file upload)
+- `GET /api/profile` - Get current user profile (includes recognition_count, is_active, last_login)
+- `PUT /api/profile` - Update user info (automatically updates last_login)
+- `GET /api/knowledge` - Get knowledge base list (18 diseases/pests)
+- `GET /api/knowledge/:id` - Get disease detail with prevention methods
+- `POST /api/recognize` - Upload image for recognition (auto-updates user recognition_count)
+- `GET /api/history` - Get recognition history (filtered by user, returns only user's own records)
+- `GET /api/recognitions/:id` - Get specific result detail with full diagnosis
+- `POST /api/feedback` - Submit feedback (supports file upload, feedback_type, contact fields)
 
 ### Admin Endpoints (Require Admin Role)
-- `GET /api/admin/stats` - Get system statistics
-- `GET /api/admin/users` - Get all users
-- `PUT /api/admin/users/:id` - Update user
-- `DELETE /api/admin/users/:id` - Delete user
-- `GET /api/admin/feedbacks` - Get all feedback
-- `PUT /api/admin/feedbacks/:id/status` - Update feedback status
+- `GET /api/admin/stats` - Get real-time system statistics:
+  - Total counts (users, recognitions, feedback)
+  - 30-day activity rate calculation
+  - Daily/monthly recognition trends (last 7 days, 12 months)
+  - Feedback type distribution (bug/feature/recognition_issue/general)
+- `GET /api/admin/users` - Get all users with activity metrics
+- `PUT /api/admin/users/:id` - Update user (role, email, active status)
+- `DELETE /api/admin/users/:id` - Delete user (cascades to related records)
+- `GET /api/admin/feedbacks` - Get all feedback with type filtering
+- `PUT /api/admin/feedbacks/:id/status` - Update feedback status (new/in_review/resolved)
 - `POST /api/admin/knowledge` - Create knowledge entry
 - `PUT /api/admin/knowledge/:id` - Update knowledge entry
 - `DELETE /api/admin/knowledge/:id` - Delete knowledge entry
@@ -422,12 +484,35 @@ lsof -ti:4000 | xargs kill -9
 
 ### Database Issues
 
-**Issue**: Table doesn't exist
+**Issue**: Table doesn't exist or missing columns
 
-**Solution**: Re-import schema:
+**Solution**: Re-import the latest schema which includes all new fields:
 ```bash
-mysql -u root -p airicepest < server/sql/schema.sql
+# Drop existing tables if needed (WARNING: This deletes all data)
+mysql -u root -p -e "DROP DATABASE IF EXISTS airicepest;"
+
+# Create fresh database with updated schema
+mysql -u root -p < server/sql/schema.sql
 mysql -u root -p airicepest < server/sql/seed.sql
+```
+
+**Alternative**: Use the migration script for existing databases:
+```bash
+cd backend
+python migrate_database.py
+```
+
+**Issue**: Foreign key constraint fails
+
+**Solution**: Ensure user_id in history/recognition_details/feedbacks tables references valid users:
+```sql
+-- Check for orphaned records
+SELECT * FROM history WHERE user_id NOT IN (SELECT id FROM users);
+SELECT * FROM recognition_details WHERE user_id NOT IN (SELECT id FROM users);
+SELECT * FROM feedbacks WHERE user_id NOT IN (SELECT id FROM users);
+
+-- Fix by setting orphaned records to NULL or reassigning to valid user
+UPDATE history SET user_id = NULL WHERE user_id NOT IN (SELECT id FROM users);
 ```
 
 **Issue**: Character encoding errors
@@ -520,21 +605,46 @@ For questions or support, please:
 
 ### 用户功能
 - 🔐 **用户认证**：基于JWT的安全登录/注册
-- 📸 **图像识别**：上传图片即时识别病虫害
+- 📸 **图像识别**：上传图片即时识别病虫害，附置信度评分
 - 📚 **知识库**：探索水稻病害百科全书，包含：
   - 病害症状与特征描述
   - 防治措施（农业、物理、生物、化学防治）
   - 高清症状图片
-- 📜 **历史记录**：查看过往识别结果
-- 💬 **反馈系统**：提交建议并支持图片附件
+  - 别名和受害部位信息
+- 📜 **历史记录**：
+  - 卡片网格布局查看历史识别结果
+  - 侧边栏快速访问最近 5 条记录
+  - 按病害名称或日期搜索筛选
+  - 详细视图包含完整诊断和防治建议
+- 💬 **反馈系统**：
+  - 提交建议并支持图片附件
+  - 选择反馈类型（Bug报告、功能建议、识别问题、一般反馈）
+  - 提供联系方式便于跟进
+- 👤 **用户资料**：
+  - 追踪识别次数和活跃状态
+  - 查看账户信息和注册日期
+  - 监控最后登录时间
 - 🌐 **国际化**：中英文界面切换
 - 🎨 **主题切换**：4种配色主题含深色模式
 
 ### 管理员功能
-- 👥 **用户管理**：查看、编辑和管理用户账户
-- 📊 **数据分析**：查看系统统计和使用趋势
-- 📝 **反馈管理**：审核和回复用户反馈
-- 🗂️ **知识库CMS**：添加/编辑病害条目
+- 👥 **用户管理**：
+  - 查看所有用户的注册日期和活跃状态
+  - 追踪用户识别次数和最后登录时间
+  - 编辑用户角色和删除账户
+  - 监控活跃用户与非活跃用户
+- 📊 **数据分析**：
+  - 实时系统统计数据（用户总数、识别总数、反馈总数）
+  - 30天活跃率计算
+  - 每日/每月识别趋势可视化
+  - 反馈类型分布图表
+  - 增长指标和用户参与度追踪
+- 📝 **反馈管理**：
+  - 查看所有用户反馈并按类型筛选
+  - 更新反馈状态（新建/审核中/已解决）
+  - 查看联系方式便于跟进
+  - 追踪反馈提交时间戳
+- 🗂️ **知识库CMS**：添加/编辑病害条目，支持多图片上传
 
 ---
 
@@ -560,8 +670,20 @@ For questions or support, please:
 
 ### 数据库
 - **类型**: MariaDB / MySQL 5.7+
-- **数据表**: users, history, recognition_details, knowledge_base, feedbacks
-- **预置数据**: 18种水稻病虫害完整元数据
+- **数据表**：
+  - `users` - 用户账户，包含识别追踪（recognition_count、is_active）
+  - `history` - 识别历史记录，关联到用户
+  - `recognition_details` - 详细识别结果，包含完整诊断信息
+  - `knowledge_base` - 水稻病虫害百科（18个条目）
+  - `feedbacks` - 用户反馈，包含类型分类（bug/feature/recognition_issue/general）
+- **数据关系**：
+  - 用户与其历史记录/识别结果/反馈之间的外键关系
+  - 自动用户活动追踪（last_login、recognition_count 更新）
+- **预置数据**：
+  - 3个测试用户账户（2个普通用户、1个管理员）
+  - 5条示例识别记录，包含完整诊断详情
+  - 18种水稻病虫害的全面信息
+  - 4条示例反馈，展示不同反馈类型
 
 ### 开发工具
 - **Node.js**: 20.x+
@@ -774,11 +896,20 @@ npm run dev
 
 **普通用户**：
 - 用户名：`farmer_john`
-- 密码：`password123`（或任意密码，如已迁移）
+- 密码：`password123`（默认，未加密的测试密码）
+- 说明：有 3 条识别历史记录
+
+**农业专家**：
+- 用户名：`agri_expert`
+- 密码：`password123`
+- 说明：有 2 条识别历史记录
 
 **管理员用户**：
 - 用户名：`admin`
 - 密码：`admin123`
+- 说明：管理员权限，可访问后台管理功能
+
+> **注意**：生产环境中，请使用 `backend/migrate_database.py` 脚本来迁移现有数据，或直接使用加密后的密码哈希值。
 
 ### 生产环境构建
 
@@ -813,22 +944,26 @@ gunicorn -w 4 -b 0.0.0.0:4000 app:app
 - `POST /api/auth/register` - 用户注册
 
 ### 用户接口（需JWT Token）
-- `GET /api/profile` - 获取当前用户资料
-- `PUT /api/profile` - 更新用户信息
-- `GET /api/knowledge` - 获取知识库列表
-- `GET /api/knowledge/:id` - 获取病害详情
-- `POST /api/recognize` - 上传图片识别
-- `GET /api/history` - 获取识别历史
-- `GET /api/recognitions/:id` - 获取具体结果详情
-- `POST /api/feedback` - 提交反馈（支持文件上传）
+- `GET /api/profile` - 获取当前用户资料（包括 recognition_count、is_active、last_login）
+- `PUT /api/profile` - 更新用户信息（自动更新 last_login）
+- `GET /api/knowledge` - 获取知识库列表（18种病虫害）
+- `GET /api/knowledge/:id` - 获取病害详情及防治方法
+- `POST /api/recognize` - 上传图片识别（自动更新用户 recognition_count）
+- `GET /api/history` - 获取识别历史（按用户过滤，仅返回用户自己的记录）
+- `GET /api/recognitions/:id` - 获取具体结果详情及完整诊断
+- `POST /api/feedback` - 提交反馈（支持文件上传、feedback_type、contact字段）
 
 ### 管理员接口（需管理员权限）
-- `GET /api/admin/stats` - 获取系统统计数据
-- `GET /api/admin/users` - 获取所有用户
-- `PUT /api/admin/users/:id` - 更新用户
-- `DELETE /api/admin/users/:id` - 删除用户
-- `GET /api/admin/feedbacks` - 获取所有反馈
-- `PUT /api/admin/feedbacks/:id/status` - 更新反馈状态
+- `GET /api/admin/stats` - 获取实时系统统计数据：
+  - 总计数（用户、识别、反馈）
+  - 30天活跃率计算
+  - 每日/每月识别趋势（最近7天、12个月）
+  - 反馈类型分布（bug/feature/recognition_issue/general）
+- `GET /api/admin/users` - 获取所有用户及活动指标
+- `PUT /api/admin/users/:id` - 更新用户（角色、邮箱、活跃状态）
+- `DELETE /api/admin/users/:id` - 删除用户（级联删除相关记录）
+- `GET /api/admin/feedbacks` - 获取所有反馈并按类型筛选
+- `PUT /api/admin/feedbacks/:id/status` - 更新反馈状态（new/in_review/resolved）
 - `POST /api/admin/knowledge` - 创建知识库条目
 - `PUT /api/admin/knowledge/:id` - 更新知识库条目
 - `DELETE /api/admin/knowledge/:id` - 删除知识库条目
@@ -905,12 +1040,35 @@ lsof -ti:4000 | xargs kill -9
 
 ### 数据库问题
 
-**问题**：表不存在
+**问题**：表不存在或缺少列
 
-**解决方案**：重新导入架构：
+**解决方案**：重新导入包含所有新字段的最新架构：
 ```bash
-mysql -u root -p airicepest < server/sql/schema.sql
+# 如需要可先删除现有表（警告：这将删除所有数据）
+mysql -u root -p -e "DROP DATABASE IF EXISTS airicepest;"
+
+# 使用更新的架构创建新数据库
+mysql -u root -p < server/sql/schema.sql
 mysql -u root -p airicepest < server/sql/seed.sql
+```
+
+**替代方案**：对现有数据库使用迁移脚本：
+```bash
+cd backend
+python migrate_database.py
+```
+
+**问题**：外键约束失败
+
+**解决方案**：确保 history/recognition_details/feedbacks 表中的 user_id 引用有效用户：
+```sql
+-- 检查孤立记录
+SELECT * FROM history WHERE user_id NOT IN (SELECT id FROM users);
+SELECT * FROM recognition_details WHERE user_id NOT IN (SELECT id FROM users);
+SELECT * FROM feedbacks WHERE user_id NOT IN (SELECT id FROM users);
+
+-- 通过将孤立记录设为 NULL 或重新分配给有效用户来修复
+UPDATE history SET user_id = NULL WHERE user_id NOT IN (SELECT id FROM users);
 ```
 
 **问题**：字符编码错误

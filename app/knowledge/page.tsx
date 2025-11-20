@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Search, BookOpen } from "lucide-react";
+import { ArrowLeft, Search, BookOpen, Home } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useLanguage } from "@/components/language-provider";
 import { API_ENDPOINTS, fetchWithAuth } from "@/lib/api-config";
+import { DiseaseCard } from "@/components/shared/DiseaseCard";
 
 interface DiseaseInfo {
   id: string;
@@ -99,10 +99,16 @@ export default function KnowledgePage() {
         {/* 头部 */}
         <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => router.back()}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {t('common.back')}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                {t('common.back')}
+              </Button>
+              <Button variant="outline" onClick={() => router.push('/home')}>
+                <Home className="h-4 w-4 mr-2" />
+                {t('common.home')}
+              </Button>
+            </div>
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-2">
                 <BookOpen className="h-8 w-8 text-primary" />
@@ -157,43 +163,17 @@ export default function KnowledgePage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredDiseases.map((disease) => (
-              <Card
+              <DiseaseCard
                 key={disease.id}
-                className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
+                id={disease.id}
+                name={disease.name}
+                category={disease.category}
+                type={disease.type}
+                aliases={disease.aliases}
+                keyFeatures={disease.keyFeatures}
+                imageUrl={disease.imageUrls?.[0]}
                 onClick={() => router.push(`/knowledge/${disease.id}`)}
-              >
-                <div className="relative h-48 overflow-hidden bg-muted">
-                  <img
-                    src={disease.imageUrls?.[0] || '/placeholder.png'}
-                    alt={disease.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                  <Badge
-                    variant="secondary"
-                    className="absolute top-2 right-2"
-                  >
-                    {disease.type}
-                  </Badge>
-                </div>
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
-                      {disease.name}
-                    </h3>
-                  </div>
-                  {disease.aliases && disease.aliases.length > 0 && (
-                    <p className="text-xs text-muted-foreground mb-2">
-                      {disease.aliases.join('、')}
-                    </p>
-                  )}
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                    {disease.keyFeatures}
-                  </p>
-                  <Badge variant="outline" className="text-xs">
-                    {disease.category}
-                  </Badge>
-                </div>
-              </Card>
+              />
             ))}
           </div>
         )}

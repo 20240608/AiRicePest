@@ -1,19 +1,55 @@
 USE airicepest;
 
-INSERT IGNORE INTO users (id, username, email, role) VALUES
-(1, 'farmer_john', 'john@farm.com', 'user'),
-(2, 'agri_expert', 'expert@agri.com', 'user'),
-(3, 'admin', 'admin@system.com', 'admin');
+-- 插入用户数据 - 添加 recognition_count 和 is_active 字段
+INSERT IGNORE INTO users (id, username, email, role, password_hash, recognition_count, is_active, created_at, last_login) VALUES
+(1, 'farmer_john', 'john@farm.com', 'user', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5F/6nYGhKNSuu', 3, TRUE, '2024-01-15 08:30:00', '2024-07-20 14:25:00'),
+(2, 'agri_expert', 'expert@agri.com', 'user', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5F/6nYGhKNSuu', 5, TRUE, '2024-02-10 09:15:00', '2024-07-19 16:45:00'),
+(3, 'admin', 'admin@system.com', 'admin', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5F/6nYGhKNSuu', 0, TRUE, '2024-01-01 00:00:00', '2024-07-21 10:00:00');
 
-INSERT IGNORE INTO history (id, date, image_url, disease_name, confidence) VALUES
-('h1', '2024-07-20', 'https://picsum.photos/seed/h1/200/200', 'Rice Blast', 95.20),
-('h2', '2024-07-18', 'https://picsum.photos/seed/h2/200/200', 'Bacterial Blight', 88.90),
-('h3', '2024-07-15', 'https://picsum.photos/seed/h3/200/200', 'Sheath Blight', 92.10);
+-- 插入历史记录 - 添加 user_id 和 created_at 字段
+INSERT IGNORE INTO history (id, user_id, date, image_url, disease_name, confidence, created_at) VALUES
+('h1', 1, '2024-07-20', 'https://picsum.photos/seed/h1/200/200', 'Rice Blast', 95.20, '2024-07-20 14:25:00'),
+('h2', 1, '2024-07-18', 'https://picsum.photos/seed/h2/200/200', 'Bacterial Blight', 88.90, '2024-07-18 10:15:00'),
+('h3', 1, '2024-07-15', 'https://picsum.photos/seed/h3/200/200', 'Sheath Blight', 92.10, '2024-07-15 16:30:00'),
+('h4', 2, '2024-07-19', 'https://picsum.photos/seed/h4/200/200', 'Brown Spot', 87.50, '2024-07-19 11:20:00'),
+('h5', 2, '2024-07-17', 'https://picsum.photos/seed/h5/200/200', 'Leaf Folder', 91.30, '2024-07-17 09:45:00');
 
-INSERT IGNORE INTO recognition_details (id, disease_name, confidence, description, cause, solution_title, solution_steps, image_url) VALUES
-('h1', 'Rice Blast', 95.20, '...', '...', 'Control Measures for Rice Blast', JSON_ARRAY('Use resistant varieties.', 'Apply fungicides like Tricyclazole.', 'Manage nitrogen application.'), 'https://picsum.photos/seed/h1/600/400'),
-('h2', 'Bacterial Blight', 88.90, '...', '...', 'Managing Bacterial Blight', JSON_ARRAY('Ensure proper drainage.', 'Use copper-based bactericides.', 'Avoid field flooding.'), 'https://picsum.photos/seed/h2/600/400'),
-('h3', 'Sheath Blight', 92.10, '...', '...', 'How to Control Sheath Blight', JSON_ARRAY('Maintain optimal plant spacing.', 'Apply fungicides like Hexaconazole.', 'Remove infected stubble.'), 'https://picsum.photos/seed/h3/600/400');
+-- 插入识别详情 - 添加 user_id 和 created_at 字段，完善 description 和 cause
+INSERT IGNORE INTO recognition_details (id, user_id, disease_name, confidence, description, cause, solution_title, solution_steps, image_url, created_at) VALUES
+('h1', 1, 'Rice Blast', 95.20, 
+ '稻瘟病是由稻梨孢真菌引起的真菌性病害，叶片上出现纺锤形病斑，中央灰白色，边缘褐色，具有明显的"三部一线"特征。严重时可造成叶片枯死、穗颈褐变，导致白穗现象，对产量影响极大。', 
+ '主要由温暖潮湿的气候条件（25-28℃，湿度>90%）、偏施氮肥、密植和连续阴雨天气等因素引起。病菌通过风雨和气流传播分生孢子，在适宜条件下快速扩散。', 
+ 'Control Measures for Rice Blast', 
+ JSON_ARRAY('选用抗病品种，如丰优香占、Y两优1号等', '种子消毒处理，减少初侵染源', '科学施肥，避免偏施氮肥，增施磷钾肥', '适期用药防治：破口初期和齐穗期喷施三环唑、稻瘟灵等药剂', '加强田间管理，及时清除病残体'), 
+ 'https://picsum.photos/seed/h1/600/400', '2024-07-20 14:25:00'),
+ 
+('h2', 1, 'Bacterial Blight', 88.90, 
+ '白叶枯病是由黄单胞菌引起的细菌性病害，叶片上出现暗绿色水渍状条斑，后扩展成黄褐色或灰白色长条斑，边缘呈波状。潮湿时病斑表面溢出淡黄色菌脓，干燥后呈鱼籽状。', 
+ '主要在温暖高湿环境（25-30℃）下发生，通过风雨、流水和灌溉水传播。台风暴雨、田间积水、伤口多等条件利于病害发生和扩散。', 
+ 'Managing Bacterial Blight', 
+ JSON_ARRAY('严格种子检疫和消毒', '种植抗病品种', '避免串灌，防止病菌随水传播', '发现病株及时拔除并带出田外销毁', '药剂防治：叶枯唑、氯溴异氰尿酸等'), 
+ 'https://picsum.photos/seed/h2/600/400', '2024-07-18 10:15:00'),
+ 
+('h3', 1, 'Sheath Blight', 92.10, 
+ '纹枯病是由立枯丝核菌引起的真菌性病害，叶鞘和叶片上出现灰绿色水渍状病斑，扩展成云纹状大斑，中央灰白、边缘褐色。病部表面有白色絮状菌丝，后期形成深褐色菌核。', 
+ '高温高湿（28-32℃）、过度密植、氮肥过量和通风不良等条件下易发病。菌核在土壤和水面漂浮，借水流和农事操作传播。', 
+ 'How to Control Sheath Blight', 
+ JSON_ARRAY('打捞田间菌核，减少侵染源', '合理密植，改善田间通风透光', '科学水肥管理，避免长期深灌和氮肥过量', '病丛率达10-15%时及时用药：噻呋酰胺、己唑醇等', '施用井冈霉素等生物农药'), 
+ 'https://picsum.photos/seed/h3/600/400', '2024-07-15 16:30:00'),
+
+('h4', 2, 'Brown Spot', 87.50,
+ '褐斑病在叶片上形成圆形或椭圆形褐色病斑，病斑周围有黄色晕圈。严重时病斑密布，导致叶片枯黄早落，影响光合作用和结实率。',
+ '土壤瘠薄、缺肥（特别是缺钾）、酸性土壤、干旱或灌溉不当等条件下易发生。病菌通过风雨传播分生孢子。',
+ 'Brown Spot Control Measures',
+ JSON_ARRAY('改良土壤，增施有机肥和钾肥', '合理灌溉，避免干旱', '选用抗病品种', '发病初期喷施苯醚甲环唑、稻瘟灵等药剂'),
+ 'https://picsum.photos/seed/h4/600/400', '2024-07-19 11:20:00'),
+
+('h5', 2, 'Leaf Folder', 91.30,
+ '卷叶螟幼虫吐丝将叶片纵向卷成筒状，在其中啃食叶肉，留下白色表皮。严重时叶片布满白色条斑，光合功能严重受损，影响产量。',
+ '温暖多雨气候（22-28℃）、高湿环境、氮肥过量导致稻株嫩绿茂盛时易大发生。成虫从南方迁飞而来，产卵于叶片。',
+ 'Leaf Folder Management',
+ JSON_ARRAY('合理施肥，避免氮肥过量造成贪青', '安装杀虫灯和性诱剂诱杀成虫', '在卵孵盛期至2龄幼虫高峰期用药', '推荐药剂：氯虫苯甲酰胺、甲维盐、茚虫威', '保护和利用天敌，如赤眼蜂'),
+ 'https://picsum.photos/seed/h5/600/400', '2024-07-17 09:45:00');
 
 -- knowledge_base 数据，pest_id 从 1 开始，symptom_images 使用您提供的路径
 INSERT IGNORE INTO knowledge_base (
@@ -186,3 +222,10 @@ INSERT IGNORE INTO knowledge_base (
  '年发生2-8代。暴食叶片。', '远距离迁飞。', NULL,
  '糖醋液、杀虫灯、杨树枝把诱杀。', '苏云金杆菌、白僵菌。',
  '适期：3龄前幼虫。\n药剂：甲维盐、高效氯氟氰菊酯。');
+
+-- 插入反馈数据 - 添加 feedback_type, contact 字段，user_id 改为 INT
+INSERT IGNORE INTO feedbacks (id, user_id, username, text, contact, feedback_type, status, created_at) VALUES
+(1, 1, 'farmer_john', '识别功能非常准确，帮助我及时发现了稻瘟病，谢谢！', 'john@farm.com', 'general', 'resolved', '2024-07-10 09:30:00'),
+(2, 2, 'agri_expert', '建议增加更多病虫害的防治视频教程', 'expert@agri.com', 'feature', 'in_review', '2024-07-15 14:20:00'),
+(3, 1, 'farmer_john', '上传图片有时候比较慢，希望能优化一下', NULL, 'bug', 'new', '2024-07-19 16:45:00'),
+(4, 2, 'agri_expert', '对纹枯病的识别结果不太准确，置信度只有65%但实际是纹枯病', 'expert@agri.com', 'recognition_issue', 'new', '2024-07-20 11:10:00');

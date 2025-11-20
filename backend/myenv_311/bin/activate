@@ -35,7 +35,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV=/media/qiu/entertainment/airicepest/AiRicePest/backend/myenv_311
+VIRTUAL_ENV=/media/qiu/entertainment/airicepest/AiRicePest/airicepest/backend/myenv_311
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

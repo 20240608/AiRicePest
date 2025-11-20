@@ -2,22 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Search, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useLanguage } from "@/components/language-provider";
 import { API_ENDPOINTS, fetchWithAuth } from "@/lib/api-config";
+import { HistoryCard } from "@/components/shared/HistoryCard";
 
 interface HistoryRecord {
   id: string;
@@ -34,7 +27,7 @@ export default function HistoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const recordsPerPage = 10;
+  const recordsPerPage = 12; // 每页显示12张卡片（3列 x 4行）
 
   useEffect(() => {
     fetchHistory();
@@ -70,23 +63,26 @@ export default function HistoryPage() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
+        {/* 页头 */}
         <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">{t('history.title')}</h1>
-            <p className="text-muted-foreground mt-1">{t('history.subtitle')}</p>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => router.push('/home')}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">{t('history.title') || '识别历史'}</h1>
+              <p className="text-muted-foreground mt-1">{t('history.subtitle') || '查看您的所有识别记录'}</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
             <ThemeSwitcher />
-            <Button variant="outline" onClick={() => router.push('/home')}>
-              {t('common.back')}
-            </Button>
           </div>
         </div>
 
-        <Card className="p-6">
-          {/* 搜索栏 */}
-          <div className="mb-6 flex gap-4">
+        {/* 搜索栏 */}
+        <Card className="p-4 mb-6">
+          <div className="flex gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -99,90 +95,75 @@ export default function HistoryPage() {
                 className="pl-9"
               />
             </div>
-            <Button onClick={fetchHistory}>{t('history.refresh')}</Button>
+            <Button onClick={fetchHistory}>{t('history.refresh') || '刷新'}</Button>
           </div>
-
-          {/* 表格 */}
-          {isLoading ? (
-            <div className="text-center py-12 text-muted-foreground">{t('common.loading')}</div>
-          ) : paginatedRecords.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">{t('history.noRecords')}</div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('history.date')}</TableHead>
-                    <TableHead>{t('history.image')}</TableHead>
-                    <TableHead>{t('history.result')}</TableHead>
-                    <TableHead>{t('history.confidence')}</TableHead>
-                    <TableHead className="text-right">{t('history.action')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedRecords.map((record) => (
-                    <TableRow key={record.id} className="hover:bg-muted/50">
-                      <TableCell className="font-medium">{record.date}</TableCell>
-                      <TableCell>
-                        <img
-                          src={record.imageUrl}
-                          alt="thumbnail"
-                          className="w-16 h-16 rounded-md object-cover border"
-                        />
-                      </TableCell>
-                      <TableCell>{record.diseaseName}</TableCell>
-                      <TableCell>
-                        <span className={`font-semibold ${record.confidence >= 90 ? 'text-green-600' : record.confidence >= 75 ? 'text-yellow-600' : 'text-orange-600'}`}>
-                          {record.confidence}%
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => router.push(`/result/${record.id}`)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          {t('home.viewDetail')}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              {/* 分页控制 */}
-              <div className="mt-6 flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {t('history.showing')} {startIndex + 1}-{Math.min(startIndex + recordsPerPage, filteredRecords.length)} {t('history.of')} {filteredRecords.length} {t('history.records')}
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    {t('history.prevPage')}
-                  </Button>
-                  <div className="flex items-center px-3 text-sm">
-                    {t('history.page')} {currentPage} {t('history.totalPages')} {totalPages}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    {t('history.nextPage')}
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
         </Card>
+
+        {/* 卡片网格 */}
+        {isLoading ? (
+          <div className="text-center py-12 text-muted-foreground">{t('common.loading') || '加载中...'}</div>
+        ) : paginatedRecords.length === 0 ? (
+          <Card className="p-12">
+            <div className="text-center text-muted-foreground">
+              <p className="text-lg font-medium mb-2">{t('history.noRecords') || '暂无历史记录'}</p>
+              <p className="text-sm">
+                {searchTerm 
+                  ? '没有找到匹配的记录，请尝试其他搜索词' 
+                  : '开始识别病虫害，记录将显示在这里'}
+              </p>
+            </div>
+          </Card>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paginatedRecords.map((record) => (
+                <HistoryCard
+                  key={record.id}
+                  id={record.id}
+                  diseaseName={record.diseaseName}
+                  confidence={record.confidence}
+                  date={record.date}
+                  imageUrl={record.imageUrl}
+                  onClick={() => router.push(`/result/${record.id}`)}
+                />
+              ))}
+            </div>
+
+            {/* 分页控制 */}
+            {totalPages > 1 && (
+              <Card className="mt-6 p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    {t('history.showing') || '显示'} {startIndex + 1}-{Math.min(startIndex + recordsPerPage, filteredRecords.length)} {t('history.of') || '共'} {filteredRecords.length} {t('history.records') || '条记录'}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      {t('history.prevPage') || '上一页'}
+                    </Button>
+                    <div className="flex items-center px-3 text-sm font-medium">
+                      {t('history.page') || '第'} {currentPage} / {totalPages} {t('history.totalPages') || '页'}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      {t('history.nextPage') || '下一页'}
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
