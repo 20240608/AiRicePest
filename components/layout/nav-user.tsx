@@ -36,7 +36,7 @@ type NavUserProps = {
 
 export function NavUser({ user }: NavUserProps) {
   const { isMobile } = useSidebar()
-  const [open, setOpen] = useDialogState()
+  const { isOpen: open, setIsOpen: setOpen } = useDialogState()
 
   return (
     <>
@@ -118,7 +118,15 @@ export function NavUser({ user }: NavUserProps) {
         </SidebarMenuItem>
       </SidebarMenu>
 
-      <SignOutDialog open={!!open} onOpenChange={setOpen} />
+      <SignOutDialog 
+        open={!!open} 
+        onOpenChange={setOpen} 
+        onConfirm={() => {
+          // Handle sign out logic here
+          localStorage.clear()
+          window.location.href = '/sign-in'
+        }}
+      />
     </>
   )
 }

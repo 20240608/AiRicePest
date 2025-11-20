@@ -53,7 +53,7 @@ export default function FeedbackPage() {
 
     setIsSubmitting(true);
     
-    try:
+    try {
       const formData = new FormData();
       formData.append('text', content);
       formData.append('contact', contact);

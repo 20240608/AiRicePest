@@ -66,14 +66,6 @@ export default function SignInPage() {
     }
   };
 
-  const handleAdminLogin = () => {
-    // 临时测试用的管理员登录
-    localStorage.setItem('token', 'test-admin-token');
-    localStorage.setItem('userRole', 'admin');
-    localStorage.setItem('username', 'admin');
-    router.push('/admin');
-  };
-
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       {/* 右上角切换按钮 */}
@@ -135,14 +127,6 @@ export default function SignInPage() {
           <CardFooter className="flex flex-col gap-3">
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? t('common.loading') : t('login.submit')}
-            </Button>
-            <Button 
-              type="button"
-              variant="outline" 
-              className="w-full"
-              onClick={handleAdminLogin}
-            >
-              {t('login.adminQuick')}
             </Button>
           </CardFooter>
         </form>
