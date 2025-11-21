@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import Column, Integer, String, Text, Enum, DECIMAL, Date, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
@@ -15,7 +17,12 @@ class User(db.Model):
     email = Column(String(128))
     role = Column(Enum('user', 'admin'), nullable=False, default='user')
     password_hash = Column(String(255))  # 存储 bcrypt 哈希
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        server_default=func.now(),
+    )
     last_login = Column(DateTime(timezone=True), nullable=True)
     recognition_count = Column(Integer, default=0)  # 识别次数统计
     is_active = Column(Boolean, default=True)  # 用户是否活跃

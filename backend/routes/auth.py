@@ -1,4 +1,7 @@
+from datetime import datetime, timezone
+
 from flask import Blueprint, request, jsonify
+
 from models import db, User
 from utils import hash_password, verify_password, generate_token
 
@@ -69,11 +72,14 @@ def register():
     
     # 创建新用户
     password_hash = hash_password(password)
+    now_utc = datetime.now(timezone.utc)
     user = User(
         username=username,
         email=email or f'{username}@example.com',
         password_hash=password_hash,
-        role='user'
+        role='user',
+        created_at=now_utc,
+        last_login=None,
     )
     
     try:

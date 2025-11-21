@@ -21,7 +21,10 @@ def get_profile():
             'id': str(user.id),
             'username': user.username,
             'email': user.email,
-            'role': user.role
+            'role': user.role,
+            'createdAt': user.created_at.isoformat() if user.created_at else None,
+            'lastLogin': user.last_login.isoformat() if user.last_login else None,
+            'recognitionCount': user.recognition_count or 0,
         }
     })
 
