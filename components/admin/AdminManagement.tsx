@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 interface Admin {
   id: string;
@@ -54,7 +55,7 @@ export function AdminManagement() {
   const fetchAdmins = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/admins', {
+      const response = await fetch(API_ENDPOINTS.adminAdmins, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -62,7 +63,18 @@ export function AdminManagement() {
 
       if (response.ok) {
         const data = await response.json();
-        setAdmins(data);
+        if (data.success) {
+          const mapped = (data.data || []).map((item: any) => ({
+            id: item.id,
+            username: item.username,
+            email: item.email,
+            role: item.role,
+            createdAt: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : '-',
+          }));
+          setAdmins(mapped);
+        } else {
+          setAdmins([]);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch admins:', error);
@@ -94,10 +106,18 @@ export function AdminManagement() {
     try {
       const token = localStorage.getItem('token');
       const url = editingAdmin 
-        ? `/api/admin/admins/${editingAdmin.id}` 
-        : '/api/admin/admins';
+        ? API_ENDPOINTS.adminAdmin(editingAdmin.id)
+        : API_ENDPOINTS.adminAdmins;
       
       const method = editingAdmin ? 'PUT' : 'POST';
+      const payload: Record<string, string> = {
+        username: formData.username,
+        email: formData.email,
+        role: formData.role,
+      };
+      if (formData.password) {
+        payload.password = formData.password;
+      }
 
       const response = await fetch(url, {
         method,
@@ -105,10 +125,11 @@ export function AdminManagement() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
-      if (response.ok) {
+      const respData = await response.json();
+      if (response.ok && respData.success) {
         toast({
           title: editingAdmin ? '更新成功' : '添加成功',
           description: `管理员 ${formData.username} 已${editingAdmin ? '更新' : '添加'}`,
@@ -133,14 +154,15 @@ export function AdminManagement() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/admins/${id}`, {
+      const response = await fetch(API_ENDPOINTS.adminAdmin(id), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
-      if (response.ok) {
+      const respData = await response.json();
+      if (response.ok && respData.success) {
         toast({
           title: '删除成功',
           description: '管理员已删除',

@@ -28,8 +28,8 @@ def login():
         return jsonify({'success': False, 'error': 'Invalid username or password'}), 401
     
     # 更新最后登录时间
-    from datetime import datetime
-    user.last_login = datetime.utcnow()
+    from datetime import datetime, timezone
+    user.last_login = datetime.now(timezone.utc)
     db.session.commit()
     
     token = generate_token(user.id, user.username, user.role)

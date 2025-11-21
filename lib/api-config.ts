@@ -4,8 +4,8 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost
 // API 端点
 export const API_ENDPOINTS = {
   // 认证
-  login: `${API_BASE_URL}/api/login`,
-  register: `${API_BASE_URL}/api/register`,
+  login: `${API_BASE_URL}/api/auth/login`,
+  register: `${API_BASE_URL}/api/auth/register`,
   
   // 用户
   profile: `${API_BASE_URL}/api/profile`,
@@ -25,8 +25,11 @@ export const API_ENDPOINTS = {
   
   // 管理员
   adminStats: `${API_BASE_URL}/api/admin/stats`,
+  adminAdmins: `${API_BASE_URL}/api/admin/admins`,
+  adminAdmin: (id: string) => `${API_BASE_URL}/api/admin/admins/${id}`,
   adminUsers: `${API_BASE_URL}/api/admin/users`,
   adminUser: (id: string) => `${API_BASE_URL}/api/admin/users/${id}`,
+  adminUserStatus: (id: string) => `${API_BASE_URL}/api/admin/users/${id}/status`,
   adminFeedbacks: `${API_BASE_URL}/api/admin/feedbacks`,
   adminFeedbackStatus: (id: string) => `${API_BASE_URL}/api/admin/feedbacks/${id}/status`,
 };

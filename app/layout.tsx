@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AI水稻病虫害识别系统",
   description: "智能识别水稻病虫害，提供专业防治方案",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

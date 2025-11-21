@@ -3,7 +3,7 @@ from models import db, History, RecognitionDetail, User
 from utils import token_required, get_current_user
 import uuid
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 recognition_bp = Blueprint('recognition', __name__)
 
@@ -123,7 +123,7 @@ def recognize_image():
     hist = History(
         id=uuid.uuid4().hex[:32],
         user_id=user_id,
-        date=datetime.utcnow().date(),
+        date=datetime.now(timezone.utc).date(),
         image_url=image_url or '',
         disease_name=disease_name,
         confidence=confidence
@@ -136,7 +136,7 @@ def recognize_image():
         # 更新用户识别计数
         if user:
             user.recognition_count = (user.recognition_count or 0) + 1
-            user.last_login = datetime.utcnow()
+            user.last_login = datetime.now(timezone.utc)
         
         db.session.commit()
     except Exception as e:

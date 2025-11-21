@@ -18,7 +18,13 @@ app = Flask(__name__, static_folder=os.path.join(BASE_DIR, 'static'))
 app.config.from_object(Config)
 
 # 启用 CORS — 增加 Next.js 本地开发端口（3000/3001）以便前端可以访问后端
-CORS(app, origins=['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://localhost:3001'], supports_credentials=True)
+CORS(app, origins=[
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://101.42.36.143'
+], supports_credentials=True)
 
 # 初始化数据库
 db.init_app(app)
@@ -86,5 +92,5 @@ if __name__ == '__main__':
         db.create_all()
     
     # 以 4000 端口启动以便与前端默认配置（http://localhost:4000）一致
-    app.run(host='0.0.0.0', port=4000, debug=True)
+    app.run(host='0.0.0.0', port=4000, debug=False)
 

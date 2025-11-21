@@ -28,7 +28,7 @@ export function DiseaseCard({
   className = "",
 }: DiseaseCardProps) {
   const getImageUrl = (url?: string) => {
-    if (!url) return '/placeholder.png';
+    if (!url) return `${API_BASE_URL}/images/placeholder.png`;
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
@@ -53,7 +53,7 @@ export function DiseaseCard({
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            target.src = '/placeholder.png';
+            target.src = `${API_BASE_URL}/images/placeholder.png`;
           }}
         />
         <Badge

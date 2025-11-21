@@ -1,11 +1,74 @@
 from flask import Blueprint, request, jsonify
 from models import db, KnowledgeBase, User, Feedback, History, RecognitionDetail
-from utils import admin_required
+from utils import admin_required, hash_password
 from sqlalchemy import func, extract
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 import json
 
 admin_bp = Blueprint('admin', __name__)
+
+DEFAULT_TIMEZONE = 'Asia/Shanghai'
+UTC = timezone.utc
+
+
+def resolve_timezone_name(candidate: str | None) -> str:
+    """Return a valid timezone name, falling back to the default when needed."""
+    tz_name = (candidate or '').strip() or DEFAULT_TIMEZONE
+    try:
+        ZoneInfo(tz_name)
+        return tz_name
+    except Exception:
+        return DEFAULT_TIMEZONE
+
+
+def get_request_timezone() -> str:
+    """Read timezone preference from query/header with a safe fallback."""
+    candidate = request.args.get('timezone') or request.headers.get('X-User-Timezone')
+    return resolve_timezone_name(candidate)
+
+
+def convert_datetime(dt: datetime | None, tz_name: str) -> str | None:
+    """Convert naive/aware datetimes to ISO strings in the requested timezone."""
+    if not dt:
+        return None
+    tz = ZoneInfo(tz_name)
+    aware = dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+    return aware.astimezone(tz).isoformat()
+
+
+def was_recently_active(dt: datetime | None, days: int = 30) -> bool:
+    """Check whether a timestamp falls within the recent-activity window."""
+    if not dt:
+        return False
+    aware = dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+    return aware >= datetime.now(UTC) - timedelta(days=days)
+
+
+def serialize_admin_user(user, tz_name: str = DEFAULT_TIMEZONE):
+    """格式化管理员账户信息"""
+    return {
+        'id': str(user.id),
+        'username': user.username,
+        'email': user.email or '',
+        'role': user.role,
+        'createdAt': convert_datetime(user.created_at, tz_name),
+        'lastLogin': convert_datetime(user.last_login, tz_name),
+    }
+
+
+def serialize_basic_user(user, tz_name: str = DEFAULT_TIMEZONE):
+    """格式化普通用户信息"""
+    return {
+        'id': str(user.id),
+        'username': user.username,
+        'email': user.email or '',
+        'role': user.role,
+        'isActive': bool(user.is_active),
+        'recentlyActive': was_recently_active(user.last_login),
+        'createdAt': convert_datetime(user.created_at, tz_name),
+        'lastLogin': convert_datetime(user.last_login, tz_name),
+    }
 
 
 def split_to_array(value):
@@ -124,35 +187,198 @@ def delete_knowledge(pest_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@admin_bp.route('/admins', methods=['GET'])
+@admin_required
+def get_admins():
+    """获取所有管理员账户"""
+    tz_name = get_request_timezone()
+    admins = User.query.filter(User.role != 'user').all()
+    data = [serialize_admin_user(u, tz_name) for u in admins]
+    return jsonify({'success': True, 'data': data})
+
+
+@admin_bp.route('/admins', methods=['POST'])
+@admin_required
+def create_admin():
+    data = request.get_json() or {}
+    username = (data.get('username') or '').strip()
+    email = (data.get('email') or '').strip() or f'{username}@example.com'
+    password = data.get('password')
+    role = data.get('role', 'admin')
+
+    if not username or len(username) < 3:
+        return jsonify({'success': False, 'error': '用户名至少需要3个字符'}), 400
+    if not password or len(password) < 8:
+        return jsonify({'success': False, 'error': '密码至少需要8个字符'}), 400
+    if User.query.filter_by(username=username).first():
+        return jsonify({'success': False, 'error': '用户名已存在'}), 409
+
+    try:
+        admin_user = User(
+            username=username,
+            email=email,
+            role=role if role in ['admin', 'super_admin'] else 'admin',
+            password_hash=hash_password(password)
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+        tz_name = get_request_timezone()
+        return jsonify({'success': True, 'data': serialize_admin_user(admin_user, tz_name)}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@admin_bp.route('/admins/<int:user_id>', methods=['PUT'])
+@admin_required
+def update_admin(user_id):
+    admin_user = User.query.get(user_id)
+    if not admin_user or admin_user.role == 'user':
+        return jsonify({'success': False, 'error': '管理员不存在'}), 404
+
+    data = request.get_json() or {}
+    try:
+        if 'username' in data and data['username']:
+            admin_user.username = data['username']
+        if 'email' in data:
+            admin_user.email = data['email'] or admin_user.email
+        if 'role' in data and data['role'] in ['admin', 'super_admin']:
+            admin_user.role = data['role']
+        if data.get('password'):
+            admin_user.password_hash = hash_password(data['password'])
+        db.session.commit()
+        tz_name = get_request_timezone()
+        return jsonify({'success': True, 'data': serialize_admin_user(admin_user, tz_name)})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@admin_bp.route('/admins/<int:user_id>', methods=['DELETE'])
+@admin_required
+def delete_admin(user_id):
+    admin_user = User.query.get(user_id)
+    if not admin_user or admin_user.role == 'user':
+        return jsonify({'success': False, 'error': '管理员不存在'}), 404
+
+    try:
+        db.session.delete(admin_user)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @admin_bp.route('/users', methods=['GET'])
 @admin_required
 def get_users():
     """获取所有用户列表 - 包含统计信息"""
+    tz_name = get_request_timezone()
     users = User.query.all()
     result = []
     for user in users:
-        # 统计用户的识别次数
         recognition_count = History.query.filter_by(user_id=user.id).count()
-        
-        # 统计用户的反馈次数
         feedback_count = Feedback.query.filter_by(user_id=user.id).count()
-        
-        # 判断是否活跃（最近30天有登录）
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-        is_active = user.last_login and user.last_login >= thirty_days_ago
-        
-        result.append({
-            'id': str(user.id),
-            'username': user.username,
-            'email': user.email or '',
-            'role': user.role,
+        serialized = serialize_basic_user(user, tz_name)
+        serialized.update({
             'recognitionCount': recognition_count,
             'feedbackCount': feedback_count,
-            'isActive': is_active,
-            'createdAt': user.created_at.isoformat() if user.created_at else None,
-            'lastLogin': user.last_login.isoformat() if user.last_login else None
         })
+        result.append(serialized)
     return jsonify({'success': True, 'data': result})
+
+
+@admin_bp.route('/users', methods=['POST'])
+@admin_required
+def create_user():
+    data = request.get_json() or {}
+    username = (data.get('username') or '').strip()
+    email = (data.get('email') or '').strip() or f'{username}@example.com'
+    password = data.get('password')
+
+    if not username or len(username) < 3:
+        return jsonify({'success': False, 'error': '用户名至少需要3个字符'}), 400
+    if not password or len(password) < 8:
+        return jsonify({'success': False, 'error': '密码至少需要8个字符'}), 400
+    if User.query.filter_by(username=username).first():
+        return jsonify({'success': False, 'error': '用户名已存在'}), 409
+
+    try:
+        user = User(
+            username=username,
+            email=email,
+            role='user',
+            password_hash=hash_password(password)
+        )
+        db.session.add(user)
+        db.session.commit()
+        tz_name = get_request_timezone()
+        return jsonify({'success': True, 'data': serialize_basic_user(user, tz_name)}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>', methods=['PUT'])
+@admin_required
+def update_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'success': False, 'error': '用户不存在'}), 404
+
+    data = request.get_json() or {}
+    try:
+        if 'username' in data and data['username']:
+            user.username = data['username']
+        if 'email' in data:
+            user.email = data['email'] or user.email
+        if data.get('password'):
+            user.password_hash = hash_password(data['password'])
+        db.session.commit()
+        tz_name = get_request_timezone()
+        return jsonify({'success': True, 'data': serialize_basic_user(user, tz_name)})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@admin_required
+def delete_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'success': False, 'error': '用户不存在'}), 404
+
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>/status', methods=['PATCH'])
+@admin_required
+def update_user_status(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'success': False, 'error': '用户不存在'}), 404
+
+    data = request.get_json() or {}
+    status = data.get('status')
+    if status not in ['active', 'banned']:
+        return jsonify({'success': False, 'error': '无效的状态'}), 400
+
+    try:
+        user.is_active = status == 'active'
+        db.session.commit()
+        tz_name = get_request_timezone()
+        return jsonify({'success': True, 'data': serialize_basic_user(user, tz_name)})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @admin_bp.route('/stats', methods=['GET'])
@@ -165,7 +391,7 @@ def get_stats():
     total_feedbacks = Feedback.query.count()
     
     # 活跃用户统计（最近30天有登录或识别记录）
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    thirty_days_ago = datetime.now(UTC) - timedelta(days=30)
     active_users = User.query.filter(
         (User.last_login >= thirty_days_ago) | (User.recognition_count > 0)
     ).count()
@@ -173,7 +399,7 @@ def get_stats():
     # 每日识别数据（最近7天）
     recognitions_per_day = []
     for i in range(6, -1, -1):
-        date = (datetime.utcnow() - timedelta(days=i)).date()
+        date = (datetime.now(UTC) - timedelta(days=i)).date()
         count = History.query.filter(
             func.date(History.created_at) == date
         ).count()
@@ -214,7 +440,7 @@ def get_stats():
     # 月度识别趋势（最近6个月）
     monthly_data = []
     for i in range(5, -1, -1):
-        target_date = datetime.utcnow() - timedelta(days=i*30)
+        target_date = datetime.now(UTC) - timedelta(days=i*30)
         month_name = target_date.strftime('%m月')
         count = History.query.filter(
             extract('year', History.created_at) == target_date.year,
@@ -241,6 +467,7 @@ def get_stats():
 @admin_required
 def get_feedbacks():
     """获取所有反馈 - 包含类型信息"""
+    tz_name = get_request_timezone()
     feedbacks = Feedback.query.order_by(Feedback.created_at.desc()).all()
     result = []
     for fb in feedbacks:
@@ -258,8 +485,8 @@ def get_feedbacks():
             'feedbackType': fb.feedback_type,
             'imageUrls': image_urls,
             'status': fb.status,
-            'timestamp': fb.created_at.isoformat() if fb.created_at else None,
-            'updatedAt': fb.updated_at.isoformat() if fb.updated_at else None
+            'timestamp': convert_datetime(fb.created_at, tz_name),
+            'updatedAt': convert_datetime(fb.updated_at, tz_name)
         })
     
     return jsonify({'success': True, 'data': result})
@@ -288,6 +515,7 @@ def update_feedback_status(feedback_id):
         except:
             image_urls = []
         
+        tz_name = get_request_timezone()
         return jsonify({
             'success': True,
             'data': {
@@ -297,7 +525,7 @@ def update_feedback_status(feedback_id):
                 'text': fb.text,
                 'imageUrls': image_urls,
                 'status': fb.status,
-                'timestamp': fb.created_at.isoformat() if fb.created_at else None
+                'timestamp': convert_datetime(fb.created_at, tz_name)
             }
         })
     except Exception as e:

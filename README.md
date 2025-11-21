@@ -522,6 +522,25 @@ UPDATE history SET user_id = NULL WHERE user_id NOT IN (SELECT id FROM users);
 ALTER DATABASE airicepest CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
+### Shell / SQL Safety
+
+**Issue**: Running `mysql -e "...$2b$..."` from Bash strips the `$` characters in bcrypt hashes (Bash treats `$2b` as a variable), causing "Invalid salt" errors for every affected user record.
+
+**Solution**: Always execute SQL through `scripts/mysql-safe.sh`, which disables unsafe shell expansion and feeds your SQL to MySQL via a temporary file.
+
+```bash
+# Preferred: pipe SQL via heredoc so nothing is expanded
+cat <<'SQL' | scripts/mysql-safe.sh -u airicepest -p123456789 airicepest
+UPDATE users SET password_hash='$2b$12$example...' WHERE username='admin';
+SQL
+
+# One-liner variant (wrapper auto-escapes $ characters for you)
+scripts/mysql-safe.sh -u airicepest -p123456789 airicepest \
+  --sql "UPDATE users SET password_hash='$2b$12$example...' WHERE id=3;"
+```
+
+> The wrapper enables `set -o noglob`/`pipefail`, writes SQL to a tempfile, and keeps `$` characters intact so every bcrypt hash (and any other literal containing `$`) is stored exactly as written.
+
 ### Common Environment Issues
 
 **Issue**: `.env` file not loaded

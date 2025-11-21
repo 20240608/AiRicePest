@@ -19,17 +19,18 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Eye, CheckCircle, XCircle } from 'lucide-react';
+import { Eye, CheckCircle, Clock } from 'lucide-react';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 interface Feedback {
   id: string;
-  userId: string;
+  userId: string | null;
   username: string;
   content: string;
-  imageUrl?: string;
-  status: 'pending' | 'processed' | 'rejected';
+  imageUrls: string[];
+  status: 'new' | 'in_review' | 'resolved';
   createdAt: string;
-  processedAt?: string;
+  updatedAt?: string;
 }
 
 export function FeedbackManagement() {
@@ -45,7 +46,7 @@ export function FeedbackManagement() {
   const fetchFeedbacks = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/feedbacks', {
+      const response = await fetch(API_ENDPOINTS.adminFeedbacks, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -53,7 +54,21 @@ export function FeedbackManagement() {
 
       if (response.ok) {
         const data = await response.json();
-        setFeedbacks(data);
+        if (data.success) {
+          const mapped: Feedback[] = (data.data || []).map((item: any) => ({
+            id: item.id,
+            userId: item.userId || null,
+            username: item.username,
+            content: item.text,
+            imageUrls: item.imageUrls || [],
+            status: item.status,
+            createdAt: item.timestamp || '-',
+            updatedAt: item.updatedAt || '-',
+          }));
+          setFeedbacks(mapped);
+        } else {
+          setFeedbacks([]);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch feedbacks:', error);
@@ -64,36 +79,30 @@ export function FeedbackManagement() {
           userId: 'user001',
           username: 'user001',
           content: '识别结果不准确，建议改进算法',
-          status: 'pending',
+          imageUrls: [],
+          status: 'new',
           createdAt: '2024-03-15 10:30:00',
+          updatedAt: '2024-03-15 10:30:00',
         },
         {
           id: '2',
           userId: 'user002',
           username: 'user002',
           content: '界面很好用，但是加载速度有点慢',
-          imageUrl: 'https://example.com/screenshot.jpg',
-          status: 'processed',
+          imageUrls: ['https://example.com/screenshot.jpg'],
+          status: 'resolved',
           createdAt: '2024-03-14 15:20:00',
-          processedAt: '2024-03-15 09:00:00',
+          updatedAt: '2024-03-15 09:00:00',
         },
         {
           id: '3',
           userId: 'user003',
           username: 'user003',
           content: '希望能添加批量识别功能',
-          status: 'pending',
+          imageUrls: [],
+          status: 'in_review',
           createdAt: '2024-03-13 14:10:00',
-        },
-        {
-          id: '4',
-          userId: 'user004',
-          username: 'user004',
-          content: '无法上传图片，一直提示错误',
-          imageUrl: 'https://example.com/error.jpg',
-          status: 'rejected',
-          createdAt: '2024-03-12 11:05:00',
-          processedAt: '2024-03-13 10:00:00',
+          updatedAt: '2024-03-14 09:10:00',
         },
       ]);
     } finally {
@@ -106,11 +115,11 @@ export function FeedbackManagement() {
     setIsDialogOpen(true);
   };
 
-  const handleUpdateStatus = async (id: string, status: 'processed' | 'rejected') => {
+  const handleUpdateStatus = async (id: string, status: 'in_review' | 'resolved') => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/feedbacks/${id}/status`, {
-        method: 'PATCH',
+      const response = await fetch(API_ENDPOINTS.adminFeedbackStatus(id), {
+        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -118,8 +127,9 @@ export function FeedbackManagement() {
         body: JSON.stringify({ status }),
       });
 
-      if (response.ok) {
-        alert(`反馈已标记为${status === 'processed' ? '已处理' : '已拒绝'}`);
+      const respData = await response.json();
+      if (response.ok && respData.success) {
+        alert(`反馈已标记为${status === 'resolved' ? '已解决' : '处理中'}`);
         setIsDialogOpen(false);
         fetchFeedbacks();
       } else {
@@ -132,12 +142,12 @@ export function FeedbackManagement() {
 
   const getStatusBadge = (status: Feedback['status']) => {
     switch (status) {
-      case 'pending':
+      case 'new':
         return <Badge variant="outline">待处理</Badge>;
-      case 'processed':
-        return <Badge variant="default">已处理</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive">已拒绝</Badge>;
+      case 'in_review':
+        return <Badge variant="secondary">处理中</Badge>;
+      case 'resolved':
+        return <Badge variant="default">已解决</Badge>;
     }
   };
 
@@ -160,7 +170,7 @@ export function FeedbackManagement() {
                 <TableHead>反馈内容</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead>提交时间</TableHead>
-                <TableHead>处理时间</TableHead>
+                <TableHead>更新时间</TableHead>
                 <TableHead className="text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
@@ -173,7 +183,7 @@ export function FeedbackManagement() {
                   </TableCell>
                   <TableCell>{getStatusBadge(feedback.status)}</TableCell>
                   <TableCell>{feedback.createdAt}</TableCell>
-                  <TableCell>{feedback.processedAt || '-'}</TableCell>
+                  <TableCell>{feedback.updatedAt || '-'}</TableCell>
                   <TableCell className="text-right">
                     <Button
                       variant="ghost"
@@ -219,23 +229,27 @@ export function FeedbackManagement() {
                 </div>
               </div>
 
-              {selectedFeedback.imageUrl && (
+              {selectedFeedback.imageUrls.length > 0 && (
                 <div>
                   <h4 className="mb-2 text-sm font-medium">附件图片</h4>
                   <div className="rounded-lg border p-3">
-                    <img
-                      src={selectedFeedback.imageUrl}
-                      alt="反馈截图"
-                      className="max-h-96 w-full object-contain"
-                    />
-                    <a
-                      href={selectedFeedback.imageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 inline-block text-sm text-primary hover:underline"
-                    >
-                      查看原图
-                    </a>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {selectedFeedback.imageUrls.map((url) => (
+                        <a
+                          key={url}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          <img
+                            src={url}
+                            alt="反馈截图"
+                            className="max-h-80 w-full rounded-md object-contain"
+                          />
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -246,9 +260,9 @@ export function FeedbackManagement() {
                   <p className="text-sm">
                     <span className="font-medium">提交时间:</span> {selectedFeedback.createdAt}
                   </p>
-                  {selectedFeedback.processedAt && (
+                  {selectedFeedback.updatedAt && (
                     <p className="text-sm">
-                      <span className="font-medium">处理时间:</span> {selectedFeedback.processedAt}
+                      <span className="font-medium">更新时间:</span> {selectedFeedback.updatedAt}
                     </p>
                   )}
                   <div className="mt-2">
@@ -258,22 +272,21 @@ export function FeedbackManagement() {
                 </div>
               </div>
 
-              {selectedFeedback.status === 'pending' && (
+              {selectedFeedback.status !== 'resolved' && (
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => handleUpdateStatus(selectedFeedback.id, 'processed')}
+                    onClick={() => handleUpdateStatus(selectedFeedback.id, 'in_review')}
+                    className="flex-1"
+                  >
+                    <Clock className="mr-2 h-4 w-4" />
+                    标记为处理中
+                  </Button>
+                  <Button
+                    onClick={() => handleUpdateStatus(selectedFeedback.id, 'resolved')}
                     className="flex-1"
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
-                    标记为已处理
-                  </Button>
-                  <Button
-                    onClick={() => handleUpdateStatus(selectedFeedback.id, 'rejected')}
-                    variant="destructive"
-                    className="flex-1"
-                  >
-                    <XCircle className="mr-2 h-4 w-4" />
-                    标记为已拒绝
+                    标记为已解决
                   </Button>
                 </div>
               )}

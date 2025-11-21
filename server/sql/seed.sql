@@ -4,7 +4,7 @@ USE airicepest;
 INSERT IGNORE INTO users (id, username, email, role, password_hash, recognition_count, is_active, created_at, last_login) VALUES
 (1, 'farmer_john', 'john@farm.com', 'user', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5F/6nYGhKNSuu', 3, TRUE, '2024-01-15 08:30:00', '2024-07-20 14:25:00'),
 (2, 'agri_expert', 'expert@agri.com', 'user', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5F/6nYGhKNSuu', 5, TRUE, '2024-02-10 09:15:00', '2024-07-19 16:45:00'),
-(3, 'admin', 'admin@system.com', 'admin', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5F/6nYGhKNSuu', 0, TRUE, '2024-01-01 00:00:00', '2024-07-21 10:00:00');
+(3, 'admin', 'admin@system.com', 'admin', '$2b$12$AkgrSyg6lz5/4iPSga916.iUnua4zbD3rvywyQt4.ZXqDunDIDXyu', 0, TRUE, '2024-01-01 00:00:00', '2024-07-21 10:00:00');
 
 -- 插入历史记录 - 添加 user_id 和 created_at 字段
 INSERT IGNORE INTO history (id, user_id, date, image_url, disease_name, confidence, created_at) VALUES

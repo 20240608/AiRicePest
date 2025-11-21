@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, Pencil, Trash2, Ban, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { API_ENDPOINTS } from '@/lib/api-config';
+import { getClientTimezone } from '@/lib/timezone';
 
 interface User {
   id: string;
@@ -35,11 +37,32 @@ interface User {
   lastLogin?: string;
 }
 
+interface BackendUser {
+  id: string | number;
+  username: string;
+  email?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  lastLogin?: string;
+}
+
+const formatDate = (value?: string, options?: Intl.DateTimeFormatOptions) => {
+  if (!value) {
+    return '-';
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+  return new Intl.DateTimeFormat(undefined, options).format(date);
+};
+
 export function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const timezone = useMemo(() => getClientTimezone(), []);
 
   const [formData, setFormData] = useState({
     username: '',
@@ -48,26 +71,48 @@ export function UserManagement() {
     password: '',
   });
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/users', {
+      const url = `${API_ENDPOINTS.adminUsers}?timezone=${encodeURIComponent(timezone)}`;
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`,
+          'X-User-Timezone': timezone,
         },
       });
 
       if (response.ok) {
         const data = await response.json();
-        setUsers(data);
+        if (data.success) {
+          const mapped = (data.data || []).map((item: BackendUser) => ({
+            id: String(item.id),
+            username: item.username,
+            email: item.email || '',
+            phone: '',
+            status: item.isActive ? 'active' : 'banned',
+            registeredAt: formatDate(item.createdAt, {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+            }),
+            lastLogin: formatDate(item.lastLogin, {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false,
+            }),
+          }));
+          setUsers(mapped);
+        } else {
+          setUsers([]);
+        }
       }
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
-      // 使用模拟数据
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
       setUsers([
         {
           id: '1',
@@ -98,29 +143,43 @@ export function UserManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [timezone]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
       const token = localStorage.getItem('token');
-      const url = editingUser 
-        ? `/api/admin/users/${editingUser.id}` 
-        : '/api/admin/users';
+      const baseUrl = editingUser 
+        ? API_ENDPOINTS.adminUser(editingUser.id)
+        : API_ENDPOINTS.adminUsers;
+      const url = `${baseUrl}?timezone=${encodeURIComponent(timezone)}`;
       
       const method = editingUser ? 'PUT' : 'POST';
+      const payload: Record<string, string> = {
+        username: formData.username,
+        email: formData.email,
+      };
+      if (formData.password) {
+        payload.password = formData.password;
+      }
 
       const response = await fetch(url, {
         method,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
+          'X-User-Timezone': timezone,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
-      if (response.ok) {
+      const respData = await response.json();
+      if (response.ok && respData.success) {
         alert(editingUser ? '更新成功' : '添加成功');
         setIsDialogOpen(false);
         resetForm();
@@ -129,6 +188,7 @@ export function UserManagement() {
         throw new Error('操作失败');
       }
     } catch (error) {
+      console.error('Failed to submit user form:', error);
       alert('操作失败，请稍后重试');
     }
   };
@@ -138,20 +198,24 @@ export function UserManagement() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/users/${id}`, {
+      const url = `${API_ENDPOINTS.adminUser(id)}?timezone=${encodeURIComponent(timezone)}`;
+      const response = await fetch(url, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'X-User-Timezone': timezone,
         },
       });
 
-      if (response.ok) {
+      const respData = await response.json();
+      if (response.ok && respData.success) {
         alert('删除成功');
         fetchUsers();
       } else {
         throw new Error('删除失败');
       }
     } catch (error) {
+      console.error('Failed to delete user:', error);
       alert('删除失败，请稍后重试');
     }
   };
@@ -164,22 +228,26 @@ export function UserManagement() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/users/${user.id}/status`, {
+      const url = `${API_ENDPOINTS.adminUserStatus(user.id)}?timezone=${encodeURIComponent(timezone)}`;
+      const response = await fetch(url, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
+          'X-User-Timezone': timezone,
         },
         body: JSON.stringify({ status: newStatus }),
       });
 
-      if (response.ok) {
+      const respData = await response.json();
+      if (response.ok && respData.success) {
         alert(`${action}成功`);
         fetchUsers();
       } else {
         throw new Error(`${action}失败`);
       }
     } catch (error) {
+      console.error(`Failed to toggle user status (${user.username}):`, error);
       alert(`${action}失败，请稍后重试`);
     }
   };

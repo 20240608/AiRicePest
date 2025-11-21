@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Enum, DECIMAL, Date, TIMESTAMP, Boolean
+from sqlalchemy import Column, Integer, String, Text, Enum, DECIMAL, Date, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from flask_sqlalchemy import SQLAlchemy
@@ -15,8 +15,8 @@ class User(db.Model):
     email = Column(String(128))
     role = Column(Enum('user', 'admin'), nullable=False, default='user')
     password_hash = Column(String(255))  # 存储 bcrypt 哈希
-    created_at = Column(TIMESTAMP, server_default=func.now())
-    last_login = Column(TIMESTAMP, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_login = Column(DateTime(timezone=True), nullable=True)
     recognition_count = Column(Integer, default=0)  # 识别次数统计
     is_active = Column(Boolean, default=True)  # 用户是否活跃
 
@@ -30,7 +30,7 @@ class History(db.Model):
     image_url = Column(String(512))
     disease_name = Column(String(128), nullable=False)
     confidence = Column(DECIMAL(5, 2), nullable=False)
-    created_at = Column(TIMESTAMP, server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class RecognitionDetail(db.Model):
@@ -45,7 +45,7 @@ class RecognitionDetail(db.Model):
     solution_title = Column(String(256))
     solution_steps = Column(Text)  # JSON 字符串
     image_url = Column(String(512))
-    created_at = Column(TIMESTAMP, server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class KnowledgeBase(db.Model):
@@ -80,6 +80,6 @@ class Feedback(db.Model):
     image_urls = Column(Text)  # JSON 字符串
     feedback_type = Column(String(32), default='general')  # 反馈类型：bug, feature, recognition_issue, general
     status = Column(Enum('new', 'in_review', 'resolved'), nullable=False, default='new')
-    created_at = Column(TIMESTAMP, server_default=func.now())
-    updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

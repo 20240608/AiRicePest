@@ -1,9 +1,10 @@
 import bcrypt
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from flask import request, jsonify
 from flask import current_app
+from typing import Optional
 
 
 def hash_password(password: str) -> str:
@@ -12,9 +13,20 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 
-def verify_password(password: str, password_hash: str) -> bool:
-    """验证密码"""
-    return bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8'))
+def verify_password(password: str, password_hash: Optional[str]) -> bool:
+    """验证密码，容错处理损坏的哈希值"""
+    if not password_hash:
+        return False
+    try:
+        return bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8'))
+    except ValueError as exc:
+        # 旧数据可能缺少开头的 $，导致 bcrypt 抛出 ValueError: Invalid salt
+        try:
+            current_app.logger.warning('Invalid password hash detected: %s', exc)
+        except RuntimeError:
+            # current_app 可能不可用（例如脚本或测试环境）
+            pass
+        return False
 
 
 def generate_token(user_id: int, username: str, role: str) -> str:
@@ -23,7 +35,7 @@ def generate_token(user_id: int, username: str, role: str) -> str:
         'user_id': user_id,
         'username': username,
         'role': role,
-        'exp': datetime.utcnow() + timedelta(hours=24)
+        'exp': datetime.now(timezone.utc) + timedelta(hours=24)
     }
     return jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm='HS256')
 
