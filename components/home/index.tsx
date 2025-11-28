@@ -9,11 +9,21 @@ import { ThemeSwitcher } from "@/components/theme-switcher"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { useLanguage } from "@/components/language-provider"
 import { cn } from "@/lib/utils"
+import { useAuthGuard } from "@/hooks/use-auth-guard"
 
 export default function DashboardPage() {
   // 核心状态：控制知识库显示，默认显示 (true)
   const [showKnowledgeBase, setShowKnowledgeBase] = useState(true)
   const { t } = useLanguage()
+  const isAuthorized = useAuthGuard()
+
+  if (!isAuthorized) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background text-muted-foreground">
+        {t('common.loading') || '加载中...'}
+      </div>
+    )
+  }
 
   return (
     <SidebarProvider>

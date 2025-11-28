@@ -15,15 +15,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CheckCircle2, AlertCircle, FileText } from "lucide-react";
+import { ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useLanguage } from "@/components/language-provider";
 import { API_ENDPOINTS, fetchWithAuth } from "@/lib/api-config";
+import { buildImageUrl } from "@/lib/utils";
+import { useAuthGuard } from "@/hooks/use-auth-guard";
 
 interface DiseaseResult {
   id: string;
   diseaseName: string;
+  diseaseKey?: string;
   confidence: number;
   description: string;
   cause: string;
@@ -39,6 +42,7 @@ export default function ResultPage() {
   const params = useParams();
   const { t } = useLanguage();
   const id = params.id as string;
+  const isAuthorized = useAuthGuard();
   
   const [result, setResult] = useState<DiseaseResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,39 +51,56 @@ export default function ResultPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchResult();
-  }, [id]);
-
-  const fetchResult = async () => {
-    try {
-      const response = await fetchWithAuth(API_ENDPOINTS.recognitions(id));
-      if (response.ok) {
-        const data = await response.json();
-        setResult(data);
-      } else {
-        console.error('Failed to fetch result');
-      }
-    } catch (error) {
-      console.error('Error fetching result:', error);
-    } finally {
-      setIsLoading(false);
+    if (!isAuthorized) {
+      return;
     }
-  };
+    let active = true;
+
+    const fetchResult = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetchWithAuth(API_ENDPOINTS.recognitions(id));
+        if (!active) {
+          return;
+        }
+
+        if (response.ok) {
+          const data = await response.json();
+          setResult(data);
+        } else {
+          console.error('Failed to fetch result');
+          setResult(null);
+        }
+      } catch (error) {
+        if (active) {
+          console.error('Error fetching result:', error);
+          setResult(null);
+        }
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchResult();
+
+    return () => {
+      active = false;
+    };
+  }, [id, isAuthorized]);
 
   const handleFeedbackSubmit = async () => {
     if (!feedbackText.trim()) return;
     
     setSubmitting(true);
     try {
-      const response = await fetch('/api/feedback', {
+      const response = await fetchWithAuth(API_ENDPOINTS.feedback, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
         body: JSON.stringify({
           resultId: id,
-          content: feedbackText,
+          text: feedbackText,
+          feedbackType: 'recognition_issue',
         }),
       });
       
@@ -89,11 +110,20 @@ export default function ResultPage() {
         setFeedbackText("");
       }
     } catch (error) {
+      console.error('Failed to submit result feedback:', error);
       alert('反馈提交失败，请稍后重试');
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
+        {t('common.loading') || '加载中...'}
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -143,9 +173,13 @@ export default function ResultPage() {
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">{t('result.uploadedImage')}</h2>
             <img
-              src={result.imageUrl}
+              src={buildImageUrl(result.imageUrl)}
               alt="uploaded"
               className="w-full rounded-lg border shadow-sm"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/placeholder.svg';
+              }}
             />
           </Card>
 
@@ -153,7 +187,9 @@ export default function ResultPage() {
           <Card className="p-6">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h2 className="text-2xl font-bold text-primary">{result.diseaseName}</h2>
+                <h2 className="text-2xl font-bold text-primary">
+                  {result.diseaseKey ? t(`disease.${result.diseaseKey}`) : result.diseaseName}
+                </h2>
                 <div className="flex items-center gap-2 mt-2">
                   <Badge variant={result.confidence >= 90 ? "default" : result.confidence >= 75 ? "secondary" : "outline"}>
                     {t('result.confidence')}：{result.confidence}%

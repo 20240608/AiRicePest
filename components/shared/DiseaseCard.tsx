@@ -17,7 +17,6 @@ interface DiseaseCardProps {
 }
 
 export function DiseaseCard({
-  id,
   name,
   category,
   type,
@@ -28,7 +27,7 @@ export function DiseaseCard({
   className = "",
 }: DiseaseCardProps) {
   const getImageUrl = (url?: string) => {
-    if (!url) return `${API_BASE_URL}/images/placeholder.png`;
+    if (!url) return '/placeholder.svg';
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
@@ -53,7 +52,7 @@ export function DiseaseCard({
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            target.src = `${API_BASE_URL}/images/placeholder.png`;
+            target.src = '/placeholder.svg';
           }}
         />
         <Badge

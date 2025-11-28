@@ -23,9 +23,9 @@ export function ThemeSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
-          <Palette className="h-5 w-5" />
-          <span className="sr-only">切换主题</span>
+        <Button variant="outline" size="sm" className="gap-2">
+          <Palette className="h-4 w-4" />
+          <span>主题</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

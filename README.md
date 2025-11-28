@@ -46,8 +46,9 @@
 - 📜 **History Tracking**: 
   - View past recognition results in card-grid layout
   - Quick access to recent 5 records in sidebar
-  - Search and filter by disease name or date
+  - Search and filter by disease name (English/中文, case-insensitive) or date
   - Detailed view with full diagnosis and treatment recommendations
+  - Uploaded preview images persist on every card/detail view thanks to static storage + absolute URLs
 - 💬 **Feedback System**: 
   - Submit suggestions with image attachments
   - Choose feedback type (Bug Report, Feature Request, Recognition Issue, General)
@@ -212,6 +213,19 @@ airicepest/
 
 ---
 
+## 🧹 Repository Hygiene
+
+To keep the repo lightweight and avoid failed pushes on limited network links, the updated `.gitignore` excludes the following heavy or environment-specific assets by default:
+
+- Frontend build/output folders such as `.next/`, `out/`, `build/`, and `dist/`
+- Package manager caches (`node_modules/`, `server/node_modules/`, Yarn PnP artifacts)
+- Python virtual environments (`venv/`, `backend/myenv_311/`, `.venv/`, etc.) and bytecode caches
+- Generated data directories (`backend/static/uploads/`, `backend/pth/`) plus SQLite databases/logs (`backend/app.db`, `dev*.log`, `build_output*.txt`)
+
+If you do need to share an uploaded image or model checkpoint, please move it to a versioned asset folder (e.g., `public/` or `knowledge_base/`) before committing.
+
+---
+
 ## 🚀 Installation
 
 ### Prerequisites
@@ -306,6 +320,12 @@ DB_NAME=airicepest
 
 # JWT Secret Key (generate a secure random string)
 SECRET_KEY=your-super-secret-jwt-key-change-in-production
+
+# 模型推理配置（可选）
+# 如不配置将默认使用 backend/pth/dense_net_model_50.pth
+MODEL_WEIGHTS_PATH=/home/ubuntu/AiRicePest/backend/pth/dense_net_model_50.pth
+# 逗号分隔的标签顺序需与训练时一致
+MODEL_LABELS=Bacterialblight,Blast,Brownspot,Healthy,Tungro
 ```
 
 **Generate a secure SECRET_KEY**:
@@ -378,6 +398,22 @@ Use a production WSGI server like **Gunicorn**:
 pip install gunicorn
 gunicorn -w 4 -b 0.0.0.0:4000 app:app
 ```
+
+### Serving Uploaded Images
+
+User uploads live in `backend/static/uploads`. In production ensure:
+
+1. The directory is readable by your web server: `sudo chmod -R o+rx /home/ubuntu /home/ubuntu/AiRicePest/backend/static/uploads`
+2. Your reverse proxy exposes the folder, e.g. Nginx:
+
+   ```nginx
+   location /static/uploads/ {
+     alias /home/ubuntu/AiRicePest/backend/static/uploads/;
+     add_header Cache-Control "public, max-age=31536000";
+   }
+   ```
+
+Front-end pages rely on `lib/utils.ts` → `buildImageUrl()` to render the correct absolute URL, so no extra rewriting is required once the folder is accessible.
 
 ---
 
@@ -457,6 +493,10 @@ npm run dev
 
 **Solution**: Ensure backend CORS is configured for `http://localhost:3000` in `backend/app.py`
 
+**Issue**: Language/Theme switchers don't open
+
+**Solution**: The Radix dropdown trigger requires the shared button component to forward refs. Confirm `components/ui/button.tsx` uses `React.forwardRef` (as in the latest code) and rebuild the frontend after editing.
+
 ### Backend Issues
 
 **Issue**: `Import "flask" could not be resolved`
@@ -481,6 +521,13 @@ pip install -r requirements.txt
 ```bash
 lsof -ti:4000 | xargs kill -9
 ```
+
+**Issue**: `GET /static/uploads/...` returns 403 even though the file exists
+
+**Solution**:
+- Allow traversal on every parent folder: `sudo chmod o+rx /home/ubuntu /home/ubuntu/AiRicePest`
+- Ensure the uploads directory is world-readable: `sudo chmod -R o+rx backend/static/uploads`
+- Reload Nginx/systemd so the new permissions are picked up, then verify with `curl -I http://<host>/static/uploads/example.jpg`.
 
 ### Database Issues
 
@@ -633,8 +680,9 @@ For questions or support, please:
 - 📜 **历史记录**：
   - 卡片网格布局查看历史识别结果
   - 侧边栏快速访问最近 5 条记录
-  - 按病害名称或日期搜索筛选
+  - 支持中英文、不区分大小写的病害名称搜索，或按日期筛选
   - 详细视图包含完整诊断和防治建议
+  - 上传的预览图通过静态目录+绝对URL持久化，刷新或重新登录后仍可查看
 - 💬 **反馈系统**：
   - 提交建议并支持图片附件
   - 选择反馈类型（Bug报告、功能建议、识别问题、一般反馈）
@@ -775,6 +823,19 @@ airicepest/
 ```
 
 **注意**：`backend/`（Python Flask）文件夹是**活跃后端**。`server/`（TypeScript Express）文件夹包含SQL架构，可选/遗留。
+
+---
+
+## 🧹 仓库清理
+
+为了避免仓库体积过大导致 push 失败，`.gitignore` 已过滤以下常见的大文件或临时目录：
+
+- 前端构建产物：`.next/`、`out/`、`build/`、`dist/`
+- 包管理器缓存：`node_modules/`、`server/node_modules/`、Yarn PnP 缓存
+- Python 虚拟环境与缓存：`venv/`、`backend/myenv_311/`、`.venv/`、`__pycache__/`
+- 运行期生成的数据：`backend/static/uploads/`、`backend/pth/`、`backend/app.db`、`dev*.log`、`build_output*.txt`
+
+如需共享某个上传图片或模型文件，请将其放到版本化目录（如 `public/` 或 `knowledge_base/`）后再提交。
 
 ---
 
@@ -954,6 +1015,22 @@ pip install gunicorn
 gunicorn -w 4 -b 0.0.0.0:4000 app:app
 ```
 
+### 生产环境的图片访问
+
+用户上传文件位于 `backend/static/uploads`。部署时请确保：
+
+1. Web服务用户对目录有读取权限：`sudo chmod -R o+rx /home/ubuntu /home/ubuntu/AiRicePest/backend/static/uploads`
+2. 反向代理放行该目录，例如 Nginx：
+
+   ```nginx
+   location /static/uploads/ {
+     alias /home/ubuntu/AiRicePest/backend/static/uploads/;
+     add_header Cache-Control "public, max-age=31536000";
+   }
+   ```
+
+前端页面依赖 `lib/utils.ts` 中的 `buildImageUrl()` 生成绝对URL，只要目录可访问即可直接展示历史卡片中的原始图片。
+
 ---
 
 ## 🔌 API接口
@@ -1032,6 +1109,10 @@ npm run dev
 
 **解决方案**：确保后端CORS已在 `backend/app.py` 中配置 `http://localhost:3000`
 
+**问题**：语言/主题切换器下拉无法展开
+
+**解决方案**：Radix 下拉触发器要求通用按钮组件转发 ref。确认 `components/ui/button.tsx` 已使用 `React.forwardRef`（当前仓库代码已处理），并在修改后重新构建前端。
+
 ### 后端问题
 
 **问题**：`Import "flask" could not be resolved`
@@ -1056,6 +1137,13 @@ pip install -r requirements.txt
 ```bash
 lsof -ti:4000 | xargs kill -9
 ```
+
+**问题**：`GET /static/uploads/...` 返回 403，但文件存在
+
+**解决方案**：
+- 给所有父目录添加执行权限：`sudo chmod o+rx /home/ubuntu /home/ubuntu/AiRicePest`
+- 确保上传目录可读：`sudo chmod -R o+rx backend/static/uploads`
+- 重新加载 Nginx/systemd 服务，然后使用 `curl -I http://<host>/static/uploads/example.jpg` 验证。
 
 ### 数据库问题
 

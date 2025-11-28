@@ -70,12 +70,14 @@ export default function SignUpPage() {
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (e) {
+        } catch (error) {
+          console.warn('Failed to parse register error response:', error);
           // 如果解析失败，使用默认错误
         }
         setError(errorMessage);
       }
-    } catch (err) {
+    } catch (error) {
+      console.error('Registration request failed:', error);
       setError(t('common.error'));
     } finally {
       setLoading(false);

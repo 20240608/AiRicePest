@@ -9,6 +9,8 @@ const mockHistory = Array.from({ length: 30 }, (_, i) => ({
   confidence: 75 + Math.floor(Math.random() * 20),
 }));
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // 这里应该从数据库查询用户的识别历史

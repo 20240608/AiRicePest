@@ -13,12 +13,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeSwitcher } from "@/components/theme-switcher";
+import { useLanguage } from "@/components/language-provider";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +33,8 @@ export default function ForgotPasswordPage() {
       // 这里应该调用重置密码的 API
       await new Promise(resolve => setTimeout(resolve, 1000)); // 模拟 API 调用
       setSubmitted(true);
-    } catch (err) {
+    } catch (error) {
+      console.error('Failed to send reset email:', error);
       setError('发送失败，请稍后重试');
     } finally {
       setLoading(false);
@@ -38,13 +43,17 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+      <div className="fixed top-4 right-4 flex items-center gap-2 z-50">
+        <LanguageSwitcher />
+        <ThemeSwitcher />
+      </div>
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>重置密码</CardTitle>
+          <CardTitle>{t('forgot.title')}</CardTitle>
           <CardDescription>
             {submitted 
-              ? '我们已发送重置链接到您的邮箱'
-              : '输入您的邮箱地址，我们将发送重置密码的链接'
+              ? t('forgot.descriptionSent')
+              : t('forgot.description')
             }
           </CardDescription>
         </CardHeader>
@@ -59,11 +68,11 @@ export default function ForgotPasswordPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">邮箱地址</Label>
+                <Label htmlFor="email">{t('forgot.emailLabel')}</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="请输入您的邮箱"
+                  placeholder={t('forgot.emailPlaceholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -73,11 +82,11 @@ export default function ForgotPasswordPage() {
             
             <CardFooter className="flex flex-col gap-3">
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? '发送中...' : '发送重置链接'}
+                {loading ? t('forgot.submitting') : t('forgot.submit')}
               </Button>
               <div className="text-center text-sm text-muted-foreground">
                 <a href="/sign-in" className="text-primary hover:underline">
-                  返回登录
+                  {t('forgot.backToLogin')}
                 </a>
               </div>
             </CardFooter>
@@ -87,13 +96,13 @@ export default function ForgotPasswordPage() {
             <CardContent>
               <Alert>
                 <AlertDescription>
-                  如果该邮箱已注册，您将收到一封包含重置密码链接的邮件。请检查您的收件箱。
+                  {t('forgot.sentMessage')}
                 </AlertDescription>
               </Alert>
             </CardContent>
             <CardFooter>
               <Button asChild className="w-full">
-                <a href="/sign-in">返回登录</a>
+                <a href="/sign-in">{t('forgot.returnButton')}</a>
               </Button>
             </CardFooter>
           </>

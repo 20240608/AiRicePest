@@ -1,6 +1,5 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -16,10 +15,6 @@ const nextConfig: NextConfig = {
       {
         source: '/static/:path*',
         destination: 'http://127.0.0.1:4000/static/:path*',
-      },
-      {
-        source: '/images/:path*',
-        destination: 'http://127.0.0.1:4000/images/:path*',
       },
     ];
   },

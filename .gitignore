@@ -1,7 +1,47 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# AiRicePest .gitignore — cleaned and deduplicated
 
-# dependencies
+########################################
+# OS / Editor / Tools
+########################################
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+.ipynb_checkpoints/
+
+########################################
+# Logs & Diagnostics
+########################################
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dev*.log
+dev_retry*.log
+build_output*.txt
+
+########################################
+# Environment / Secrets
+########################################
+.env*
+.env.local
+.env.*.local
+/.python-version
+/.mypy_cache/
+/.pyenv/
+.cache/
+
+########################################
+# Node / Frontend Artifacts
+########################################
 /node_modules
+/server/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -9,33 +49,71 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
-# testing
-/coverage
-
-# next.js
 /.next/
 /out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
 .vercel
-
-# typescript
+/build
+/dist
 *.tsbuildinfo
 next-env.d.ts
+
+########################################
+# Python Environments & Build Outputs
+########################################
+/venv/
+/env/
+/ENV/
+/.venv/
+/venv.bak/
+/env.bak/
+/myenv_311/
+/backend/myenv_311/
+/backend/venv/
+/backend/.venv/
+pip-wheel-metadata/
+/build/
+/downloads/
+/eggs/
+.eggs/
+/wheels/
+*.egg
+*.egg-info
+*.whl
+
+########################################
+# Python Caches / Bytecode
+########################################
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*$py.class
+
+########################################
+# Data, Models & Uploads (large/non-source)
+########################################
+*.pth
+*.pt
+*.ckpt
+# /backend/pth/ contains source code (model.py), do not ignore the whole folder
+# /backend/pth/ 
+/backend/static/uploads/
+/knowledge_base/xlsx_contents/
+*.sqlite3
+*.db
+/backend/app.db
+
+########################################
+# Test / Coverage Artifacts
+########################################
+/coverage
+/.pytest_cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+########################################
+# Misc Project-specific
+########################################
+*.pem

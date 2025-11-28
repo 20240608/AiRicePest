@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,29 +11,38 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { useLanguage } from "@/components/language-provider";
 import { API_ENDPOINTS, fetchWithAuth } from "@/lib/api-config";
 import { HistoryCard } from "@/components/shared/HistoryCard";
+import { useAuthGuard } from "@/hooks/use-auth-guard";
 
 interface HistoryRecord {
   id: string;
   date: string;
   imageUrl: string;
+  imagePath?: string;
   diseaseName: string;
+  diseaseKey?: string;
   confidence: number;
 }
+
+const englishDiseaseNames: Record<string, string> = {
+  Bacterialblight: 'Bacterial Blight',
+  Blast: 'Rice Blast',
+  Brownspot: 'Brown Spot',
+  Healthy: 'Healthy Leaf',
+  Tungro: 'Tungro',
+  Unknown: 'Unknown Disease',
+};
 
 export default function HistoryPage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const isAuthorized = useAuthGuard();
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const recordsPerPage = 12; // 每页显示12张卡片（3列 x 4行）
 
-  useEffect(() => {
-    fetchHistory();
-  }, []);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
       const response = await fetchWithAuth(API_ENDPOINTS.history);
       if (response.ok) {
@@ -47,18 +56,58 @@ export default function HistoryPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthorized) {
+      return;
+    }
+    fetchHistory();
+  }, [fetchHistory, isAuthorized]);
 
   // 过滤搜索结果
-  const filteredRecords = records.filter(record =>
-    record.diseaseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.date.includes(searchTerm)
-  );
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+
+  const filteredRecords = records.filter(record => {
+    if (!normalizedSearch) {
+      return true;
+    }
+
+    const candidates: string[] = [
+      record.diseaseName || '',
+      record.date || '',
+      record.diseaseKey || '',
+    ];
+
+    if (record.diseaseKey) {
+      const localizedName = t(`disease.${record.diseaseKey}`);
+      if (localizedName && localizedName !== `disease.${record.diseaseKey}`) {
+        candidates.push(localizedName);
+      }
+
+      const englishName = englishDiseaseNames[record.diseaseKey];
+      if (englishName) {
+        candidates.push(englishName);
+      }
+    }
+
+    return candidates.some(value =>
+      value && value.toLowerCase().includes(normalizedSearch)
+    );
+  });
 
   // 分页
   const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
   const startIndex = (currentPage - 1) * recordsPerPage;
   const paginatedRecords = filteredRecords.slice(startIndex, startIndex + recordsPerPage);
+
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
+        {t('common.loading') || '加载中...'}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -121,6 +170,7 @@ export default function HistoryPage() {
                   key={record.id}
                   id={record.id}
                   diseaseName={record.diseaseName}
+                  diseaseKey={record.diseaseKey}
                   confidence={record.confidence}
                   date={record.date}
                   imageUrl={record.imageUrl}

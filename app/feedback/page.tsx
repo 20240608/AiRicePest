@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useLanguage } from "@/components/language-provider";
-import { API_BASE_URL, API_ENDPOINTS } from "@/lib/api-config";
+import { API_ENDPOINTS, fetchWithAuth } from "@/lib/api-config";
 
 export default function FeedbackPage() {
   const router = useRouter();
@@ -65,12 +65,8 @@ export default function FeedbackPage() {
       }
       images.forEach(img => formData.append('images', img));
 
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.feedback}`, {
+      const response = await fetchWithAuth(API_ENDPOINTS.feedback, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
         body: formData,
       });
 
@@ -83,6 +79,7 @@ export default function FeedbackPage() {
         throw new Error('提交失败');
       }
     } catch (error) {
+      console.error('Failed to submit feedback:', error);
       alert(t('feedback.error'));
     } finally {
       setIsSubmitting(false);

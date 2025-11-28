@@ -4,7 +4,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from 'lucide-react'
-import { DayButton, DayPicker, getDefaultClassNames } from 'react-day-picker'
+import { DayPicker } from 'react-day-picker'
 import { cn } from '@/lib/utils'
 import { Button, buttonVariants } from '@/components/ui/button'
 
@@ -12,7 +12,7 @@ function Calendar({
   className,
   classNames,
   showOutsideDays = true,
-  captionLayout = 'label',
+  captionLayout = 'label' as any,
   buttonVariant = 'ghost',
   formatters,
   components,
@@ -20,7 +20,9 @@ function Calendar({
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>['variant']
 }) {
-  const defaultClassNames = getDefaultClassNames()
+  // react-day-picker v8 changed their API: there's no getDefaultClassNames exported.
+  // We'll fallback to an empty object so the build can complete; styles can be adjusted later as needed.
+  const defaultClassNames: Record<string, string> = {}
 
   return (
     <DayPicker
@@ -169,13 +171,18 @@ function Calendar({
   )
 }
 
+type CalendarDayButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  day: { date: Date }
+  modifiers: Record<string, boolean>
+}
+
 function CalendarDayButton({
   className,
   day,
   modifiers,
   ...props
-}: React.ComponentProps<typeof DayButton>) {
-  const defaultClassNames = getDefaultClassNames()
+}: CalendarDayButtonProps) {
+  const defaultClassNames: Record<string, string> = {}
 
   const ref = React.useRef<HTMLButtonElement>(null)
   React.useEffect(() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, MessageSquare, Search, User, LogOut, Plus, History, Clock } from "lucide-react"
+import { BookOpen, User, LogOut, Plus, Clock } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import {
@@ -37,20 +37,26 @@ export function AppSidebar({ onOpenKnowledgeBase }: AppSidebarProps) {
   const [recentHistory, setRecentHistory] = useState<HistoryRecord[]>([])
 
   useEffect(() => {
-    fetchRecentHistory()
-  }, [])
+    let active = true
 
-  const fetchRecentHistory = async () => {
-    try {
-      const response = await fetchWithAuth(API_ENDPOINTS.history + '?limit=5')
-      if (response.ok) {
-        const data = await response.json()
-        setRecentHistory(data.slice(0, 5))
+    const loadRecentHistory = async () => {
+      try {
+        const response = await fetchWithAuth(`${API_ENDPOINTS.history}?limit=5`)
+        if (response.ok && active) {
+          const data = await response.json()
+          setRecentHistory(data.slice(0, 5))
+        }
+      } catch (error) {
+        console.error('Error fetching recent history:', error)
       }
-    } catch (error) {
-      console.error('Error fetching recent history:', error)
     }
-  }
+
+    loadRecentHistory()
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -90,7 +96,13 @@ export function AppSidebar({ onOpenKnowledgeBase }: AppSidebarProps) {
               
               {/* 新建对话 */}
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => router.push('/home')}>
+                <SidebarMenuButton onClick={() => {
+                  router.push('/home');
+                  // 触发自定义事件以重置聊天
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new Event('new-chat-event'));
+                  }
+                }}>
                   <Plus />
                   <span>{t('home.newChat')}</span>
                 </SidebarMenuButton>

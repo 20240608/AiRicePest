@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Carousel,
@@ -32,11 +32,12 @@ export function KnowledgeBase() {
   const [displayDiseases, setDisplayDiseases] = useState<DiseaseInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDiseases();
+  const getRandomDiseases = useCallback((arr: DiseaseInfo[], count: number) => {
+    const shuffled = [...arr].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
   }, []);
 
-  const fetchDiseases = async () => {
+  const fetchDiseases = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetchWithAuth(API_ENDPOINTS.knowledge);
@@ -51,12 +52,11 @@ export function KnowledgeBase() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [getRandomDiseases]);
 
-  const getRandomDiseases = (arr: DiseaseInfo[], count: number) => {
-    const shuffled = [...arr].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
-  };
+  useEffect(() => {
+    fetchDiseases();
+  }, [fetchDiseases]);
 
   const handleRefresh = () => {
     setDisplayDiseases(getRandomDiseases(diseases, 6));

@@ -33,6 +33,22 @@ interface Feedback {
   updatedAt?: string;
 }
 
+interface FeedbackApiResponse {
+  id: string;
+  userId?: string | null;
+  username: string;
+  text: string;
+  imageUrls?: string[];
+  status: 'new' | 'in_review' | 'resolved';
+  timestamp?: string;
+  updatedAt?: string;
+}
+
+interface FeedbackListResponse {
+  success: boolean;
+  data?: FeedbackApiResponse[];
+}
+
 export function FeedbackManagement() {
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,9 +69,10 @@ export function FeedbackManagement() {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data: FeedbackListResponse = await response.json();
         if (data.success) {
-          const mapped: Feedback[] = (data.data || []).map((item: any) => ({
+          const apiFeedbacks: FeedbackApiResponse[] = Array.isArray(data.data) ? data.data : [];
+          const mapped: Feedback[] = apiFeedbacks.map((item) => ({
             id: item.id,
             userId: item.userId || null,
             username: item.username,
@@ -136,6 +153,7 @@ export function FeedbackManagement() {
         throw new Error('更新失败');
       }
     } catch (error) {
+      console.error('Failed to update feedback status:', error);
       alert('更新失败，请稍后重试');
     }
   };

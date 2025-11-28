@@ -21,9 +21,9 @@ export function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
-          <Languages className="h-5 w-5" />
-          <span className="sr-only">{t('language.switch')}</span>
+        <Button variant="outline" size="sm" className="gap-2">
+          <Languages className="h-4 w-4" />
+          <span>{language === 'zh' ? '中文' : 'En'}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

@@ -1,5 +1,6 @@
 // API 配置
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+// 使用相对路径，通过 Next.js rewrite 代理到后端
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 // API 端点
 export const API_ENDPOINTS = {

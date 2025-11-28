@@ -34,6 +34,19 @@ interface Admin {
   createdAt: string;
 }
 
+interface AdminApiResponse {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  createdAt?: string | null;
+}
+
+interface AdminListResponse {
+  success: boolean;
+  data?: AdminApiResponse[];
+}
+
 export function AdminManagement() {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,9 +75,10 @@ export function AdminManagement() {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data: AdminListResponse = await response.json();
         if (data.success) {
-          const mapped = (data.data || []).map((item: any) => ({
+          const apiAdmins: AdminApiResponse[] = Array.isArray(data.data) ? data.data : [];
+          const mapped = apiAdmins.map((item) => ({
             id: item.id,
             username: item.username,
             email: item.email,
@@ -141,6 +155,7 @@ export function AdminManagement() {
         throw new Error('操作失败');
       }
     } catch (error) {
+      console.error('Failed to save admin:', error);
       toast({
         title: '操作失败',
         description: '请稍后重试',
@@ -172,6 +187,7 @@ export function AdminManagement() {
         throw new Error('删除失败');
       }
     } catch (error) {
+      console.error('Failed to delete admin:', error);
       toast({
         title: '删除失败',
         description: '请稍后重试',

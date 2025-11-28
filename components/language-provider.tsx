@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 type Language = 'zh' | 'en';
 
@@ -46,11 +46,15 @@ const translations = {
     'home.viewDetail': '查看详情',
     'home.provideFeedback': '提供反馈',
     'home.aiAnalyzing': 'AI 正在分析图像特征，请稍候...',
+    'home.recognitionFailed': '识别失败：',
+    'home.suggestionFallback': '建议联系农技人员进一步诊断。',
+    'home.reasonFallback': '模型暂未提供具体病因描述。',
     'home.disclaimer': 'AI 识别结果仅供参考，建议结合专业农技人员意见。',
     
     // 历史记录
     'history.title': '识别历史',
     'history.subtitle': '查看所有病虫害识别记录',
+    'history.searchPlaceholder': '搜索病害名称或日期...',
     'history.date': '日期',
     'history.image': '图片',
     'history.result': '识别结果',
@@ -168,6 +172,18 @@ const translations = {
     'login.register': '立即注册',
     'login.adminQuick': '管理员快速登录',
     'login.error': '登录失败，请检查用户名和密码',
+
+    // 忘记密码
+    'forgot.title': '重置密码',
+    'forgot.description': '输入您的邮箱地址，我们将发送重置密码的链接',
+    'forgot.descriptionSent': '我们已发送重置链接到您的邮箱',
+    'forgot.emailLabel': '邮箱地址',
+    'forgot.emailPlaceholder': '请输入您的邮箱',
+    'forgot.submit': '发送重置链接',
+    'forgot.submitting': '发送中...',
+    'forgot.backToLogin': '返回登录',
+    'forgot.sentMessage': '如果该邮箱已注册，您将收到一封包含重置密码链接的邮件。请检查您的收件箱。',
+    'forgot.returnButton': '返回登录',
     
     // 注册
     'register.title': '创建账户',
@@ -201,6 +217,14 @@ const translations = {
     'language.switch': '切换语言',
     'language.chinese': '简体中文',
     'language.english': 'English',
+
+    // 病害名称
+    'disease.Bacterialblight': '细菌性疫病',
+    'disease.Blast': '稻瘟病',
+    'disease.Brownspot': '褐斑病',
+    'disease.Healthy': '健康',
+    'disease.Tungro': '钨谷病',
+    'disease.Unknown': '未知病害',
   },
   en: {
     // Common
@@ -234,11 +258,15 @@ const translations = {
     'home.viewDetail': 'View Details',
     'home.provideFeedback': 'Provide Feedback',
     'home.aiAnalyzing': 'AI is analyzing image features, please wait...',
+    'home.recognitionFailed': 'Recognition failed: ',
+    'home.suggestionFallback': 'Please consult agronomists for further diagnosis.',
+    'home.reasonFallback': 'The model did not provide a specific cause description.',
     'home.disclaimer': 'AI recognition results are for reference only. Consult professional agronomists.',
     
     // History
     'history.title': 'Recognition History',
     'history.subtitle': 'View all disease recognition records',
+    'history.searchPlaceholder': 'Search disease name or date...',
     'history.date': 'Date',
     'history.image': 'Image',
     'history.result': 'Result',
@@ -356,6 +384,18 @@ const translations = {
     'login.register': 'Register now',
     'login.adminQuick': 'Admin Quick Login',
     'login.error': 'Login failed. Please check your username and password',
+
+    // Forgot password
+    'forgot.title': 'Reset Password',
+    'forgot.description': 'Enter your email and we will send you a reset link',
+    'forgot.descriptionSent': 'We have sent a reset link to your email',
+    'forgot.emailLabel': 'Email Address',
+    'forgot.emailPlaceholder': 'Please enter your email',
+    'forgot.submit': 'Send Reset Link',
+    'forgot.submitting': 'Sending...',
+    'forgot.backToLogin': 'Back to Login',
+    'forgot.sentMessage': 'If the email is registered, you will receive a reset link shortly. Please check your inbox.',
+    'forgot.returnButton': 'Back to Login',
     
     // Register
     'register.title': 'Create Account',
@@ -389,20 +429,27 @@ const translations = {
     'language.switch': 'Switch Language',
     'language.chinese': '简体中文',
     'language.english': 'English',
+
+    // Disease Names
+    'disease.Bacterialblight': 'Bacterial Blight',
+    'disease.Blast': 'Blast',
+    'disease.Brownspot': 'Brown Spot',
+    'disease.Healthy': 'Healthy',
+    'disease.Tungro': 'Tungro',
+    'disease.Unknown': 'Unknown Disease',
   },
 };
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguage] = useState<Language>('zh');
-  const [mounted, setMounted] = useState(false);
+const getInitialLanguage = (): Language => {
+  if (typeof window === 'undefined') {
+    return 'zh';
+  }
+  const stored = localStorage.getItem('language') as Language | null;
+  return stored && (stored === 'zh' || stored === 'en') ? stored : 'zh';
+};
 
-  useEffect(() => {
-    setMounted(true);
-    const savedLang = localStorage.getItem('language') as Language | null;
-    if (savedLang && (savedLang === 'zh' || savedLang === 'en')) {
-      setLanguage(savedLang);
-    }
-  }, []);
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const [language, setLanguage] = useState<Language>(getInitialLanguage);
 
   const handleSetLanguage = (lang: Language) => {
     setLanguage(lang);

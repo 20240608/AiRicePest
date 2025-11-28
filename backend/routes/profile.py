@@ -65,3 +65,11 @@ def update_profile():
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
+@profile_bp.route('/user/avatar', methods=['POST'])
+@token_required
+def upload_avatar():
+    """上传用户头像 (Mock)"""
+    # 暂时只返回成功，不实际处理文件
+    return jsonify({'success': True, 'message': 'Avatar uploaded successfully'})
+

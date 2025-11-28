@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,6 @@ export default function KnowledgePage() {
   const router = useRouter();
   const { t } = useLanguage();
   const [diseases, setDiseases] = useState<DiseaseInfo[]>([]);
-  const [filteredDiseases, setFilteredDiseases] = useState<DiseaseInfo[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>(t('knowledge.all'));
   const [isLoading, setIsLoading] = useState(true);
@@ -45,29 +44,35 @@ export default function KnowledgePage() {
   const categories = [t('knowledge.all'), t('knowledge.fungal'), t('knowledge.bacterial'), t('knowledge.pest')];
 
   useEffect(() => {
+    let isMounted = true;
+
+    const fetchDiseases = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetchWithAuth(API_ENDPOINTS.knowledge);
+        if (response.ok) {
+          const data = await response.json();
+          if (isMounted) {
+            setDiseases(data || []);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch knowledge base:', error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
     fetchDiseases();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  useEffect(() => {
-    filterDiseases();
-  }, [searchTerm, selectedCategory, diseases]);
-
-  const fetchDiseases = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetchWithAuth(API_ENDPOINTS.knowledge);
-      if (response.ok) {
-        const data = await response.json();
-        setDiseases(data || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch knowledge base:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const filterDiseases = () => {
+  const filteredDiseases = useMemo(() => {
     let filtered = diseases;
 
     const allText = t('knowledge.all');
@@ -83,15 +88,16 @@ export default function KnowledgePage() {
     }
 
     if (searchTerm) {
+      const searchValue = searchTerm.toLowerCase();
       filtered = filtered.filter(d =>
-        d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.keyFeatures.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.aliases.some(alias => alias.toLowerCase().includes(searchTerm.toLowerCase()))
+        d.name.toLowerCase().includes(searchValue) ||
+        d.keyFeatures.toLowerCase().includes(searchValue) ||
+        d.aliases.some(alias => alias.toLowerCase().includes(searchValue))
       );
     }
 
-    setFilteredDiseases(filtered);
-  };
+    return filtered;
+  }, [diseases, searchTerm, selectedCategory, t]);
 
   return (
     <div className="min-h-screen bg-background p-6">
